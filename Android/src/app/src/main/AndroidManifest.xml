@@ -139,6 +139,12 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".server.PocketNodeService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="gallery_high_priority_push_channel" />

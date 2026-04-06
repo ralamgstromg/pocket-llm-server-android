@@ -379,6 +379,7 @@ constructor(
         model.initializing = false
         if (model.instance != null) {
           Log.d(TAG, "Model '${model.name}' initialized successfully")
+          com.google.ai.edge.gallery.server.PocketNodeState.activeModel = model
           updateModelInitializationStatus(
             model = model,
             status = ModelInitializationStatusType.INITIALIZED,

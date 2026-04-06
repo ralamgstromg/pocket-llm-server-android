@@ -31,6 +31,17 @@ class GalleryApplication : Application() {
   override fun onCreate() {
     super.onCreate()
 
+    // Explicitly initialize WorkManager to fix "WorkManager is not initialized properly" 
+    // caused by manifest merger overriding the default startup provider.
+    try {
+        androidx.work.WorkManager.initialize(
+            this,
+            androidx.work.Configuration.Builder().build()
+        )
+    } catch (e: Exception) {
+        // Ignored if already initialized
+    }
+
     // Load saved theme.
     ThemeSettings.themeOverride.value = dataStoreRepository.readTheme()
 

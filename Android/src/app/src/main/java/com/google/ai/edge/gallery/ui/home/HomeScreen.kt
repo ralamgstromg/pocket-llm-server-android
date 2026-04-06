@@ -325,6 +325,30 @@ fun HomeScreen(
                     ),
                 )
               }
+              Spacer(modifier = Modifier.height(16.dp))
+              Row(modifier = Modifier.fillMaxWidth()) {
+                SquareDrawerItem(
+                  label = "Pocket Node Server",
+                  description = "Run API on Port 8080",
+                  icon = Icons.Rounded.Flag,
+                  onClick = {
+                    val intent = android.content.Intent(context, com.google.ai.edge.gallery.server.PocketNodeService::class.java)
+                    if (com.google.ai.edge.gallery.server.PocketNodeState.isServerRunning) {
+                      context.stopService(intent)
+                    } else {
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                         context.startForegroundService(intent)
+                      } else {
+                         context.startService(intent)
+                      }
+                    }
+                    scope.launch { drawerState.close() }
+                  },
+                  modifier = Modifier.weight(1f),
+                  iconBrush = linearGradient(colors = listOf(Color.Red, Color.Blue)),
+                )
+                Spacer(modifier = Modifier.weight(1f)) // empty space to keep it square
+              }
             }
           }
         },
