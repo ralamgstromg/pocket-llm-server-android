@@ -1,4 +1,4 @@
-# Pocket Node ✨
+# Pocket Node (Google AI-Edge-gallery)✨
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 **Turn your Android phone into a true, offline AI network node.** 
