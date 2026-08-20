@@ -49,3 +49,6 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 7. **PocketNodeModelResolver Auto-Discovery & Request Model Matching**:
    - Created `PocketNodeModelResolver.kt` to auto-parse `1_0_11.json` and resolve downloaded models automatically when `PocketNodeService` or Ktor starts, preventing `No active model initialized` errors even if the user never opened the server dialog.
    - Support for dynamic `req.model` matching in `/v1/chat/completions` payload to match requested model names against allowlist.
+8. **Resilient Vision/Audio Encoder Fallback in LiteRT-LM (`LlmChatModelHelper.kt`)**:
+   - Fixed `INVALID_ARGUMENT: The Vision Encoder model must have exactly one signature but got 3` error when initializing models with `llmSupportImage` flag in `.litertlm` files without vision signatures.
+   - Implemented automatic retry/fallback in `LlmChatModelHelper.kt`: if initializing `EngineConfig` with `visionBackend` or `audioBackend` fails due to signature/encoder mismatch, `LlmChatModelHelper` gracefully retries in text-only mode (`visionBackend = null`), guaranteeing successful model initialization across all model architectures.

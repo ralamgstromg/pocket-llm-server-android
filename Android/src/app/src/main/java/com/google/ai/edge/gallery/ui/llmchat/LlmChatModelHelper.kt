@@ -103,23 +103,78 @@ object LlmChatModelHelper : LlmModelHelper {
     Log.d(TAG, "Preferred backend: $preferredBackend")
 
     val modelPath = model.getPath(context = context)
-    val engineConfig =
-      EngineConfig(
-        modelPath = modelPath,
-        backend = preferredBackend,
-        visionBackend = if (shouldEnableImage) visionBackend else null, // must be GPU for Gemma 3n
-        audioBackend = if (shouldEnableAudio) Backend.CPU() else null, // must be CPU for Gemma 3n
-        maxNumTokens = maxTokens,
-        cacheDir =
-          if (modelPath.startsWith("/data/local/tmp"))
-            context.getExternalFilesDir(null)?.absolutePath
-          else null,
-      )
+    val cacheDir = if (modelPath.startsWith("/data/local/tmp")) context.getExternalFilesDir(null)?.absolutePath else null
 
     // Create an instance of LiteRT LM engine and conversation.
     try {
-      val engine = Engine(engineConfig)
-      engine.initialize()
+      var currentVisionBackend = if (shouldEnableImage) visionBackend else null
+      var currentAudioBackend = if (shouldEnableAudio) Backend.CPU() else null
+
+      var engineConfig =
+        EngineConfig(
+          modelPath = modelPath,
+          backend = preferredBackend,
+          visionBackend = currentVisionBackend,
+          audioBackend = currentAudioBackend,
+          maxNumTokens = maxTokens,
+          cacheDir = cacheDir,
+        )
+
+      var engine: Engine
+      try {
+        engine = Engine(engineConfig)
+        engine.initialize()
+      } catch (e: Exception) {
+        if (currentVisionBackend != null) {
+          Log.w(TAG, "Failed initializing with vision backend (${e.message}). Retrying without vision backend.")
+          currentVisionBackend = null
+          engineConfig =
+            EngineConfig(
+              modelPath = modelPath,
+              backend = preferredBackend,
+              visionBackend = null,
+              audioBackend = currentAudioBackend,
+              maxNumTokens = maxTokens,
+              cacheDir = cacheDir,
+            )
+          try {
+            engine = Engine(engineConfig)
+            engine.initialize()
+          } catch (e2: Exception) {
+            if (currentAudioBackend != null) {
+              Log.w(TAG, "Failed initializing with audio backend (${e2.message}). Retrying in text-only mode.")
+              engineConfig =
+                EngineConfig(
+                  modelPath = modelPath,
+                  backend = preferredBackend,
+                  visionBackend = null,
+                  audioBackend = null,
+                  maxNumTokens = maxTokens,
+                  cacheDir = cacheDir,
+                )
+              engine = Engine(engineConfig)
+              engine.initialize()
+            } else {
+              throw e2
+            }
+          }
+        } else if (currentAudioBackend != null) {
+          Log.w(TAG, "Failed initializing with audio backend (${e.message}). Retrying in text-only mode.")
+          engineConfig =
+            EngineConfig(
+              modelPath = modelPath,
+              backend = preferredBackend,
+              visionBackend = null,
+              audioBackend = null,
+              maxNumTokens = maxTokens,
+              cacheDir = cacheDir,
+            )
+          engine = Engine(engineConfig)
+          engine.initialize()
+        } else {
+          throw e
+        }
+      }
 
       ExperimentalFlags.enableConversationConstrainedDecoding =
         enableConversationConstrainedDecoding
