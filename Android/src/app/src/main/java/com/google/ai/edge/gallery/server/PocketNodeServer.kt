@@ -2,6 +2,7 @@ package com.google.ai.edge.gallery.server
 
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -31,6 +32,9 @@ data class ChatResponse(val id: String, val choices: List<Choice>)
 
 @Serializable
 data class Choice(val message: Message)
+
+@Serializable
+data class TranscriptionResponse(val text: String)
 
 class PocketNodeServer {
     private var server: EmbeddedServer<*, *>? = null
@@ -89,6 +93,84 @@ class PocketNodeServer {
                         )
                         call.respond(reply)
                     }
+
+                    post("/v1/audio/transcriptions") {
+                        var audioBytes: ByteArray? = null
+                        var promptParam: String? = null
+                        var languageParam: String? = null
+                        var responseFormatParam: String? = null
+
+                        try {
+                            val multipart = call.receiveMultipart()
+                            multipart.forEachPart { part ->
+                                when (part) {
+                                    is PartData.FileItem -> {
+                                        audioBytes = part.streamProvider().readBytes()
+                                    }
+                                    is PartData.FormItem -> {
+                                        when (part.name) {
+                                            "prompt" -> promptParam = part.value
+                                            "language" -> languageParam = part.value
+                                            "response_format" -> responseFormatParam = part.value
+                                        }
+                                    }
+                                    else -> {}
+                                }
+                                part.dispose()
+                            }
+                        } catch (e: Exception) {
+                            call.respondText("Error parsing multipart audio request: ${e.message}", status = HttpStatusCode.BadRequest)
+                            return@post
+                        }
+
+                        if (audioBytes == null || audioBytes!!.isEmpty()) {
+                            call.respondText("Error: No audio file uploaded in multipart field 'file'.", status = HttpStatusCode.BadRequest)
+                            return@post
+                        }
+
+                        val audioModel = PocketNodeState.activeAudioModel ?: PocketNodeState.activeChatModel
+                        if (audioModel == null || audioModel.instance == null) {
+                            call.respondText("Error: No active audio/STT model initialized (e.g. Whisper-Large-V3-Turbo or Gemma 3n). Please open an audio-capable model first.", status = HttpStatusCode.ServiceUnavailable)
+                            return@post
+                        }
+
+                        val prompt = when {
+                            !promptParam.isNullOrBlank() -> promptParam!!
+                            languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
+                                "Transcribe el audio adjunto de forma precisa a texto en español."
+                            !languageParam.isNullOrBlank() ->
+                                "Transcribe the audio accurately to text in language: ${languageParam}."
+                            else ->
+                                "Transcribe the following audio recording into accurate text."
+                        }
+
+                        var fullResponse = ""
+                        suspendCoroutine { continuation ->
+                            LlmChatModelHelper.runInference(
+                                model = audioModel,
+                                input = prompt,
+                                audioClips = listOf(audioBytes!!),
+                                resultListener = { partialResult, done, _ ->
+                                    fullResponse += partialResult
+                                    if (done) {
+                                        continuation.resume(Unit)
+                                    }
+                                },
+                                cleanUpListener = {},
+                                onError = { errorMsg ->
+                                    fullResponse += "\\n[Error: $errorMsg]"
+                                    continuation.resume(Unit)
+                                }
+                            )
+                        }
+
+                        val cleanText = fullResponse.trim()
+                        if (responseFormatParam.equals("text", ignoreCase = true)) {
+                            call.respondText(cleanText, ContentType.Text.Plain)
+                        } else {
+                            call.respond(TranscriptionResponse(text = cleanText))
+                        }
+                    }
                 }
             }.start(wait = false)
         }
@@ -100,3 +182,4 @@ class PocketNodeServer {
         server = null
     }
 }
+

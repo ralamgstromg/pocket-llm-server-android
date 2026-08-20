@@ -379,7 +379,12 @@ constructor(
         model.initializing = false
         if (model.instance != null) {
           Log.d(TAG, "Model '${model.name}' initialized successfully")
-          com.google.ai.edge.gallery.server.PocketNodeState.activeModel = model
+          if (model.llmSupportAudio || model.bestForTaskIds.contains("llm_ask_audio")) {
+            com.google.ai.edge.gallery.server.PocketNodeState.activeAudioModel = model
+          }
+          if (!model.llmSupportAudio || model.bestForTaskIds.contains("llm_chat") || model.bestForTaskIds.isEmpty()) {
+            com.google.ai.edge.gallery.server.PocketNodeState.activeChatModel = model
+          }
           updateModelInitializationStatus(
             model = model,
             status = ModelInitializationStatusType.INITIALIZED,

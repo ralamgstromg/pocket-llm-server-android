@@ -87,8 +87,16 @@
         "maxTokens": 4096,
         "accelerators": "cpu,gpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab", "llm_ask_image", "llm_ask_audio"],
-      "bestForTaskTypes": ["llm_ask_image", "llm_ask_audio"]
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_ask_image",
+        "llm_ask_audio"
+      ],
+      "bestForTaskTypes": [
+        "llm_ask_image",
+        "llm_ask_audio"
+      ]
     },
     {
       "name": "Gemma-3n-E4B-it",
@@ -107,7 +115,12 @@
         "maxTokens": 4096,
         "accelerators": "cpu,gpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab", "llm_ask_image", "llm_ask_audio"]
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_ask_image",
+        "llm_ask_audio"
+      ]
     },
     {
       "name": "Gemma3-1B-IT",
@@ -124,8 +137,14 @@
         "maxTokens": 1024,
         "accelerators": "gpu,cpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab"],
-      "bestForTaskTypes": ["llm_chat", "llm_prompt_lab"]
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ],
+      "bestForTaskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
     },
     {
       "name": "Qwen2.5-1.5B-Instruct",
@@ -142,7 +161,10 @@
         "maxTokens": 4096,
         "accelerators": "gpu,cpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
     },
     {
       "name": "DeepSeek-R1-Distill-Qwen-1.5B",
@@ -159,7 +181,10 @@
         "maxTokens": 4096,
         "accelerators": "gpu,cpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
     },
     {
       "name": "TinyGarden-270M",
@@ -203,6 +228,29 @@
       ],
       "bestForTaskTypes": [
         "llm_mobile_actions"
+      ]
+    },
+    {
+      "name": "Whisper-Large-V3-Turbo",
+      "modelId": "litert-community/whisper-large-v3-turbo",
+      "modelFile": "whisper_large_v3_turbo_30s_i4.litertlm",
+      "description": "Whisper Large V3 Turbo model converted for LiteRT-LM, providing fast and highly accurate speech-to-text transcription in Spanish and multiple languages.",
+      "sizeInBytes": 755273648,
+      "minDeviceMemoryInGb": 6,
+      "commitHash": "4e3af6a1597a54b6e47d2899cf4f6c39932b0b7e",
+      "llmSupportAudio": true,
+      "defaultConfig": {
+        "topK": 40,
+        "topP": 0.95,
+        "temperature": 0.0,
+        "maxTokens": 1024,
+        "accelerators": "cpu,gpu"
+      },
+      "taskTypes": [
+        "llm_ask_audio"
+      ],
+      "bestForTaskTypes": [
+        "llm_ask_audio"
       ]
     }
   ]

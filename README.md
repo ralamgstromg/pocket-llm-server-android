@@ -11,29 +11,72 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 
 ## 🚀 The Power of Pocket Node
 
-*   **API on the Go**: Pocket Node exposes a background network service on `http://YOUR_PHONE_IP:8080/v1/chat/completions`.
-*   **OpenAI-Compatible Schema**: Designed to cleanly integrate with your existing scripts, Python backends, and low-code wrappers (like `n8n`) using the industry standard JSON schema.
-*   **Zero Cloud, Zero Cost**: 100% on-device inference using your Android's NPU/GPU. Completely offline and private.
+*   **API on the Go**: Pocket Node exposes background network services on `http://YOUR_PHONE_IP:8080`:
+    *   `POST /v1/chat/completions`: Text generation / chat completions.
+    *   `POST /v1/audio/transcriptions`: Speech-to-Text (STT) audio transcription compatible with OpenAI.
+*   **OpenAI-Compatible Schema**: Designed to cleanly integrate with your existing scripts, Python backends, and low-code wrappers (like `n8n`) using standard JSON / Multipart schemas.
+*   **Speech-to-Text (STT) & Whisper Support**: Optimized for `litert-community/whisper-large-v3-turbo` and multimodal LiteRT-LM models (e.g., Gemma 3n / Gemma 4), supporting accurate Spanish (`language=es`) and multilingual audio transcription.
+*   **Dual Active Model Management**: `PocketNodeState` manages `activeChatModel` and `activeAudioModel` independently, enabling a dedicated STT engine alongside your LLM chat model.
+*   **Zero Cloud, Zero Cost**: 100% on-device inference using your Android's NPU/GPU/CPU. Completely offline and private.
 
 ## 🏁 Get Started in Minutes
 
 1. **Clone & Build**: Clone this repository and build the APK using Android Studio.
-2. **Launch a Model**: Open the app and tap **Chat** to load a model (like Gemma 4) into memory.
-3. **Ignite the Server**: Open the left-side navigation drawer and tap **Pocket Node Server** instantly turn your phone into a server!
+2. **Launch Models**: Open the app and load your preferred models (e.g. Gemma 4 for Chat, `Whisper-Large-V3-Turbo` or Gemma 3n for Speech-to-Text).
+3. **Ignite the Server**: Open the left-side navigation drawer and tap **Pocket Node Server** to instantly turn your phone into an AI API server!
 4. **Test it out**:
-   From any PC on your local network, fire this `curl` command using your mobile IP:
-   ```bash
-   curl http://<YOUR_PHONE_IP>:8080/v1/chat/completions \
-     -H "Content-Type: application/json" \
-     -d '{
-       "messages": [
-         {
-           "role": "user",
-           "content": "Explain quantum computing in one sentence."
-         }
-       ]
-     }'
-   ```
+   - **Text Completion**:
+     ```bash
+     curl http://<YOUR_PHONE_IP>:8080/v1/chat/completions \
+       -H "Content-Type: application/json" \
+       -d '{
+         "messages": [
+           {
+             "role": "user",
+             "content": "Explain quantum computing in one sentence."
+           }
+         ]
+       }'
+     ```
+   - **Audio Transcription (Spanish / STT)**:
+     ```bash
+     curl http://<YOUR_PHONE_IP>:8080/v1/audio/transcriptions \
+       -H "Content-Type: multipart/form-data" \
+       -F "file=@audio_espanol.mp3" \
+       -F "model=whisper-large-v3-turbo" \
+       -F "language=es" \
+       -F "response_format=json"
+     ```
+
+## 🛠️ Compiling & Building the APK (CLI)
+
+### Requirements
+- **JDK 21** (e.g. OpenJDK 21). Java 21 is required for compatibility with `LiteRT-LM` class bytecode.
+- **Android SDK** (configured in `Android/src/local.properties`).
+
+### 1. Configure SDK Path
+Ensure `Android/src/local.properties` contains your Android SDK location:
+```properties
+sdk.dir=/home/rcastro/android-sdk
+```
+
+### 2. Build Debug APK
+To build the debug APK:
+```bash
+cd Android/src
+JAVA_HOME=/home/rcastro/.jdks/jdk-21.0.6+7 ./gradlew assembleDebug
+```
+The output APK will be generated at:
+`Android/src/app/build/outputs/apk/debug/app-debug.apk`
+
+### 3. Build Release APK
+To build the release APK:
+```bash
+cd Android/src
+JAVA_HOME=/home/rcastro/.jdks/jdk-21.0.6+7 ./gradlew assembleRelease
+```
+The output APK will be generated at:
+`Android/src/app/build/outputs/apk/release/app-release.apk`
 
 ## 📖 Upstream Features & Documentation
 
@@ -48,3 +91,4 @@ To explore the original user interface capabilities and architectural deep-dives
 ## 📄 License
 
 Licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
+
