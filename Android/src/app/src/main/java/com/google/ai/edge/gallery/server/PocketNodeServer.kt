@@ -1,5 +1,6 @@
 package com.google.ai.edge.gallery.server
 
+import android.content.Context
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -39,7 +40,7 @@ data class TranscriptionResponse(val text: String)
 class PocketNodeServer {
     private var server: EmbeddedServer<*, *>? = null
 
-    fun start() {
+    fun start(context: Context? = null) {
         if (server != null) return
         PocketNodeState.isServerRunning = true
 
@@ -96,7 +97,7 @@ class PocketNodeServer {
                     }
 
                     post("/v1/audio/transcriptions") {
-                        var audioBytes: ByteArray? = null
+                        var rawAudioBytes: ByteArray? = null
                         var promptParam: String? = null
                         var languageParam: String? = null
                         var responseFormatParam: String? = null
@@ -106,7 +107,7 @@ class PocketNodeServer {
                             multipart.forEachPart { part ->
                                 when (part) {
                                     is PartData.FileItem -> {
-                                        audioBytes = part.streamProvider().readBytes()
+                                        rawAudioBytes = part.streamProvider().readBytes()
                                     }
                                     is PartData.FormItem -> {
                                         when (part.name) {
@@ -124,7 +125,7 @@ class PocketNodeServer {
                             return@post
                         }
 
-                        if (audioBytes == null || audioBytes!!.isEmpty()) {
+                        if (rawAudioBytes == null || rawAudioBytes!!.isEmpty()) {
                             call.respondText("Error: No audio file uploaded in multipart field 'file'.", status = HttpStatusCode.BadRequest)
                             return@post
                         }
@@ -133,6 +134,13 @@ class PocketNodeServer {
                         if (audioModel == null || audioModel.instance == null) {
                             call.respondText("Error: No active audio/STT model initialized (e.g. Whisper-Large-V3-Turbo or Gemma 3n). Please open an audio-capable model first.", status = HttpStatusCode.ServiceUnavailable)
                             return@post
+                        }
+
+                        // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
+                        val processedAudioBytes = if (context != null) {
+                            AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+                        } else {
+                            rawAudioBytes!!
                         }
 
                         val prompt = when {
@@ -150,7 +158,7 @@ class PocketNodeServer {
                             LlmChatModelHelper.runInference(
                                 model = audioModel,
                                 input = prompt,
-                                audioClips = listOf(audioBytes!!),
+                                audioClips = listOf(processedAudioBytes),
                                 resultListener = { partialResult, done, _ ->
                                     fullResponse += partialResult
                                     if (done) {

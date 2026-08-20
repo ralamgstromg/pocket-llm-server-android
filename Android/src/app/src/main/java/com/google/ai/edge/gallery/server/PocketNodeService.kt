@@ -29,7 +29,7 @@ class PocketNodeService : Service() {
         PocketNodeState.loadPreferences(this)
 
         // Start Ktor HTTP Server
-        server.start()
+        server.start(this)
 
         // Create the persistent notification required by Android for Foreground Services
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)

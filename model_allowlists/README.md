@@ -39,3 +39,7 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
    - Updated `PocketNodeServer.kt` so `/v1/chat/completions` and `/v1/audio/transcriptions` route requests to the shared single model instance.
    - Updated `PocketNodeServerDialog.kt` to automatically link chat and audio selection for multimodal audio models, avoiding double RAM allocation.
    - Synced bundled assets in `Android/src/app/src/main/assets/model_allowlists/1_0_11.json`.
+5. **Multi-Format Audio Decoding in STT API (`AudioDecoderHelper.kt`)**:
+   - Implemented native `MediaExtractor` + `MediaCodec` audio decoder helper in `AudioDecoderHelper.kt`.
+   - Supports decoding uploaded MP3, M4A, AAC, OGG, FLAC, WAV, AMR, WebM audio bytes into 16-bit 16kHz Mono PCM WAV data.
+   - Integrated `AudioDecoderHelper` into `/v1/audio/transcriptions` endpoint in `PocketNodeServer.kt`.
