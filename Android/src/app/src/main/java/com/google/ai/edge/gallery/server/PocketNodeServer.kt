@@ -62,7 +62,8 @@ class PocketNodeServer {
                         val req = call.receive<ChatRequest>()
                         val prompt = req.messages.lastOrNull()?.content ?: ""
                         
-                        val model = PocketNodeState.activeModel
+                        PocketNodeState.syncSharedModels()
+                        val model = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
                         if (model == null || model.instance == null) {
                             call.respondText("Error: No active model initialized. Please open a model in the Gallery App first.", status = HttpStatusCode.ServiceUnavailable)
                             return@post

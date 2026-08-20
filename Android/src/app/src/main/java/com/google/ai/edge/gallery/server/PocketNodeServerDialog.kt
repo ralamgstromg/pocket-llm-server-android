@@ -153,7 +153,12 @@ fun PocketNodeServerDialog(
                                     val matchedModel = allModels.find { it.name == model.name }
                                     if (matchedModel != null) {
                                         PocketNodeState.activeChatModel = matchedModel
+                                        if (matchedModel.llmSupportAudio && selectedAudioModelName.isEmpty()) {
+                                            selectedAudioModelName = model.name
+                                            PocketNodeState.activeAudioModel = matchedModel
+                                        }
                                     }
+                                    PocketNodeState.syncSharedModels()
                                     PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
                                 }
                             )
@@ -198,6 +203,7 @@ fun PocketNodeServerDialog(
                                     if (matchedModel != null) {
                                         PocketNodeState.activeAudioModel = matchedModel
                                     }
+                                    PocketNodeState.syncSharedModels()
                                     PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
                                 }
                             )
@@ -218,6 +224,7 @@ fun PocketNodeServerDialog(
                         if (matchedAudio != null) {
                             PocketNodeState.activeAudioModel = matchedAudio
                         }
+                        PocketNodeState.syncSharedModels()
                         PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
 
                         val intent = Intent(context, PocketNodeService::class.java)

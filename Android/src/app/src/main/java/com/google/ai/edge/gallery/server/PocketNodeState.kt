@@ -23,6 +23,16 @@ object PocketNodeState {
     private const val KEY_CHAT_MODEL = "preferred_chat_model"
     private const val KEY_AUDIO_MODEL = "preferred_audio_model"
 
+    fun syncSharedModels() {
+        if (activeChatModel != null && activeAudioModel != null && activeChatModel?.name == activeAudioModel?.name) {
+            activeAudioModel = activeChatModel
+        } else if (activeAudioModel == null && activeChatModel?.llmSupportAudio == true) {
+            activeAudioModel = activeChatModel
+        } else if (activeChatModel == null && activeAudioModel != null) {
+            activeChatModel = activeAudioModel
+        }
+    }
+
     fun loadPreferences(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         preferredChatModelName = prefs.getString(KEY_CHAT_MODEL, "") ?: ""

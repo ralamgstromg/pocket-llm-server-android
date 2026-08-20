@@ -33,3 +33,9 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
    - `LFM2.5-1.2B-Instruct` (`litert-community/LFM2.5-1.2B-Instruct`)
    - `Phi-4-mini-instruct` (`litert-community/Phi-4-mini-instruct`)
 3. **Format Restriction**: Confirmed that all models in `1_0_11.json` strictly use the `.litertlm` format.
+4. **Single-Instance Multimodal Model Architecture**:
+   - Updated `LlmChatTaskModule.kt` to pass `supportImage = model.llmSupportImage` and `supportAudio = model.llmSupportAudio` during model initialization, allowing single-process multimodal support.
+   - Updated `PocketNodeState.kt` with `syncSharedModels()` so that `activeChatModel` and `activeAudioModel` reference the exact same `Model` instance in memory when a multimodal model (e.g. Gemma 4, Gemma 3n) is selected.
+   - Updated `PocketNodeServer.kt` so `/v1/chat/completions` and `/v1/audio/transcriptions` route requests to the shared single model instance.
+   - Updated `PocketNodeServerDialog.kt` to automatically link chat and audio selection for multimodal audio models, avoiding double RAM allocation.
+   - Synced bundled assets in `Android/src/app/src/main/assets/model_allowlists/1_0_11.json`.
