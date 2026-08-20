@@ -60,6 +60,9 @@ Ensure `Android/src/local.properties` contains your Android SDK location:
 sdk.dir=/home/rcastro/android-sdk
 ```
 
+*Note: All `./gradlew` commands must be executed from the `Android/src` directory (from the repo root run `cd Android/src`, or if you are inside `Android/` run `cd src`).*
+
+
 ### 2. Build Debug APK
 To build the debug APK:
 ```bash
