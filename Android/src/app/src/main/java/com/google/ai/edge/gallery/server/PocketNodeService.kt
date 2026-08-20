@@ -25,6 +25,9 @@ class PocketNodeService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Load stored model preferences
+        PocketNodeState.loadPreferences(this)
+
         // Start Ktor HTTP Server
         server.start()
 

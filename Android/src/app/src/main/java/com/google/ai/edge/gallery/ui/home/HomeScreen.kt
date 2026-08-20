@@ -83,6 +83,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -217,6 +218,15 @@ fun HomeScreen(
     // preventing a "flicker" and improving the perceived responsiveness of the UI.
     // The `loadingModelAllowlistDelayed` state is used to control the actual
     // visibility of the indicator based on this debounced logic.
+    var showServerDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showServerDialog) {
+      com.google.ai.edge.gallery.server.PocketNodeServerDialog(
+        modelManagerViewModel = modelManagerViewModel,
+        onDismissRequest = { showServerDialog = false }
+      )
+    }
+
     var loadingModelAllowlistDelayed by remember { mutableStateOf(false) }
     // This effect runs whenever uiState.loadingModelAllowlist changes
     LaunchedEffect(uiState.loadingModelAllowlist) {
@@ -332,16 +342,7 @@ fun HomeScreen(
                   description = "Run API on Port 8080",
                   icon = Icons.Rounded.Flag,
                   onClick = {
-                    val intent = android.content.Intent(context, com.google.ai.edge.gallery.server.PocketNodeService::class.java)
-                    if (com.google.ai.edge.gallery.server.PocketNodeState.isServerRunning) {
-                      context.stopService(intent)
-                    } else {
-                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                         context.startForegroundService(intent)
-                      } else {
-                         context.startService(intent)
-                      }
-                    }
+                    showServerDialog = true
                     scope.launch { drawerState.close() }
                   },
                   modifier = Modifier.weight(1f),

@@ -834,6 +834,11 @@ constructor(
         }
 
         if (modelAllowlist == null) {
+          Log.d(TAG, "Attempting to load model allowlist from app assets.")
+          modelAllowlist = readModelAllowlistFromAssets()
+        }
+
+        if (modelAllowlist == null) {
           // Load from github.
           var version = BuildConfig.VERSION_NAME.replace(".", "_")
           val url = getAllowlistUrl(version)
@@ -981,6 +986,20 @@ constructor(
     }
 
     return null
+  }
+
+  private fun readModelAllowlistFromAssets(): ModelAllowlist? {
+    try {
+      val version = BuildConfig.VERSION_NAME.replace(".", "_")
+      val assetPath = "model_allowlists/$version.json"
+      Log.d(TAG, "Reading model allowlist from assets: $assetPath")
+      val jsonString = context.assets.open(assetPath).bufferedReader().use { it.readText() }
+      val gson = Gson()
+      return gson.fromJson(jsonString, ModelAllowlist::class.java)
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to read model allowlist from assets", e)
+      return null
+    }
   }
 
   private fun isModelPartiallyDownloaded(model: Model): Boolean {
