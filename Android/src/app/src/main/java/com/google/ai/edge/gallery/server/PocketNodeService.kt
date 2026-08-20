@@ -28,6 +28,20 @@ class PocketNodeService : Service() {
         // Load stored model preferences
         PocketNodeState.loadPreferences(this)
 
+        // Auto-resolve active models from allowlist if not set
+        val allModels = PocketNodeModelResolver.getAllModels(this)
+        if (PocketNodeState.activeChatModel == null && PocketNodeState.preferredChatModelName.isNotEmpty()) {
+            PocketNodeState.activeChatModel = allModels.find { it.name.equals(PocketNodeState.preferredChatModelName, ignoreCase = true) }
+        }
+        if (PocketNodeState.activeAudioModel == null && PocketNodeState.preferredAudioModelName.isNotEmpty()) {
+            PocketNodeState.activeAudioModel = allModels.find { it.name.equals(PocketNodeState.preferredAudioModelName, ignoreCase = true) }
+        }
+        if (PocketNodeState.activeChatModel == null && allModels.isNotEmpty()) {
+            val downloaded = allModels.find { java.io.File(it.getPath(this)).exists() }
+            PocketNodeState.activeChatModel = downloaded ?: allModels.first()
+        }
+        PocketNodeState.syncSharedModels()
+
         // Start Ktor HTTP Server
         server.start(this)
 

@@ -20,7 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
+import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +33,7 @@ fun PocketNodeServerDialog(
 ) {
     val context = LocalContext.current
     val uiState by modelManagerViewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     // Get all available models across tasks
     val allModels = remember(uiState) {
@@ -49,6 +53,9 @@ fun PocketNodeServerDialog(
 
     var chatDropdownExpanded by remember { mutableStateOf(false) }
     var audioDropdownExpanded by remember { mutableStateOf(false) }
+
+    var isInitializing by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
@@ -98,29 +105,48 @@ fun PocketNodeServerDialog(
                     color = if (PocketNodeState.isServerRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(if (PocketNodeState.isServerRunning) Color.Green else Color.Red)
+                                .background(if (PocketNodeState.isServerRunning) Color(0xFF4CAF50) else Color(0xFFFF9800))
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = if (PocketNodeState.isServerRunning) "Servidor Activo (Puerto 8080)" else "Servidor Inactivo",
-                                fontWeight = FontWeight.SemiBold,
+                                text = if (PocketNodeState.isServerRunning) "Servidor HTTP Activo" else "Servidor HTTP Inactivo",
+                                fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
+                            if (PocketNodeState.isServerRunning) {
+                                Text(
+                                    text = "http://localhost:8080",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
 
+                if (statusMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = statusMessage,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Selector de Modelo para Completions
+                // Selector de Modelo para Chat (LLM / Completions)
                 Text(
                     text = "Modelo para Chat / Completions:",
                     fontWeight = FontWeight.Medium,
@@ -132,7 +158,7 @@ fun PocketNodeServerDialog(
                     onExpandedChange = { chatDropdownExpanded = !chatDropdownExpanded }
                 ) {
                     OutlinedTextField(
-                        value = allModels.find { it.name == selectedChatModelName }?.name ?: selectedChatModelName.ifEmpty { "Seleccionar modelo" },
+                        value = (allModels.find { it.name == selectedChatModelName })?.name ?: selectedChatModelName.ifEmpty { "Seleccionar modelo Chat" },
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = chatDropdownExpanded) },
@@ -215,6 +241,7 @@ fun PocketNodeServerDialog(
 
                 // Action Toggle Button
                 Button(
+                    enabled = !isInitializing,
                     onClick = {
                         val matchedChat = allModels.find { it.name == selectedChatModelName }
                         if (matchedChat != null) {
@@ -231,10 +258,44 @@ fun PocketNodeServerDialog(
                         if (PocketNodeState.isServerRunning) {
                             context.stopService(intent)
                         } else {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(intent)
+                            val targetModel = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel
+                            if (targetModel != null && targetModel.instance == null) {
+                                val modelFile = File(targetModel.getPath(context))
+                                if (!modelFile.exists() || modelFile.length() == 0L) {
+                                    statusMessage = "⚠️ El modelo '${targetModel.name}' aún no se ha descargado en el dispositivo."
+                                    return@Button
+                                }
+
+                                isInitializing = true
+                                statusMessage = "⏳ Cargando modelo '${targetModel.name}' en memoria RAM/NPU..."
+
+                                scope.launch {
+                                    LlmChatModelHelper.initialize(
+                                        context = context,
+                                        model = targetModel,
+                                        supportImage = targetModel.llmSupportImage,
+                                        supportAudio = targetModel.llmSupportAudio,
+                                        onDone = { errorMsg ->
+                                            isInitializing = false
+                                            if (errorMsg.isEmpty()) {
+                                                statusMessage = "✅ Modelo cargado exitosamente."
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                                    context.startForegroundService(intent)
+                                                } else {
+                                                    context.startService(intent)
+                                                }
+                                            } else {
+                                                statusMessage = "❌ Error cargando modelo: $errorMsg"
+                                            }
+                                        }
+                                    )
+                                }
                             } else {
-                                context.startService(intent)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    context.startForegroundService(intent)
+                                } else {
+                                    context.startService(intent)
+                                }
                             }
                         }
                     },
@@ -246,10 +307,18 @@ fun PocketNodeServerDialog(
                         containerColor = if (PocketNodeState.isServerRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(
-                        text = if (PocketNodeState.isServerRunning) "Detener Servidor" else "Iniciar Servidor HTTP",
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isInitializing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (PocketNodeState.isServerRunning) "Detener Servidor" else "Iniciar Servidor HTTP",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

@@ -43,3 +43,9 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
    - Implemented native `MediaExtractor` + `MediaCodec` audio decoder helper in `AudioDecoderHelper.kt`.
    - Supports decoding uploaded MP3, M4A, AAC, OGG, FLAC, WAV, AMR, WebM audio bytes into 16-bit 16kHz Mono PCM WAV data.
    - Integrated `AudioDecoderHelper` into `/v1/audio/transcriptions` endpoint in `PocketNodeServer.kt`.
+6. **Automatic On-the-Fly Model Initialization**:
+   - Updated `PocketNodeServerDialog.kt` button action to automatically load downloaded models into RAM (`model.instance`) when clicking **Iniciar Servidor HTTP**, displaying a progress indicator ("⏳ Cargando modelo...").
+   - Updated `PocketNodeServer.kt` route handlers (`/v1/chat/completions` and `/v1/audio/transcriptions`) to auto-initialize `model.instance` on-the-fly if an HTTP request arrives while the model is not yet loaded in memory.
+7. **PocketNodeModelResolver Auto-Discovery & Request Model Matching**:
+   - Created `PocketNodeModelResolver.kt` to auto-parse `1_0_11.json` and resolve downloaded models automatically when `PocketNodeService` or Ktor starts, preventing `No active model initialized` errors even if the user never opened the server dialog.
+   - Support for dynamic `req.model` matching in `/v1/chat/completions` payload to match requested model names against allowlist.

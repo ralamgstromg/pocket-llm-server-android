@@ -64,9 +64,57 @@ class PocketNodeServer {
                         val prompt = req.messages.lastOrNull()?.content ?: ""
                         
                         PocketNodeState.syncSharedModels()
-                        val model = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
-                        if (model == null || model.instance == null) {
-                            call.respondText("Error: No active model initialized. Please open a model in the Gallery App first.", status = HttpStatusCode.ServiceUnavailable)
+                        val ctx = context
+                        var model = if (req.model.isNotEmpty() && ctx != null) {
+                            PocketNodeModelResolver.findModelByNameOrId(ctx, req.model)
+                        } else null
+
+                        if (model == null) {
+                            model = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
+                        }
+
+                        if (model == null && ctx != null) {
+                            val allModels = PocketNodeModelResolver.getAllModels(ctx)
+                            model = allModels.find { java.io.File(it.getPath(ctx)).exists() } ?: allModels.firstOrNull()
+                            if (model != null) {
+                                PocketNodeState.activeChatModel = model
+                            }
+                        }
+
+                        if (model == null) {
+                            call.respondText("Error: No chat model available. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
+                            return@post
+                        }
+
+                        if (model.instance == null && ctx != null) {
+                            val modelFile = java.io.File(model.getPath(ctx))
+                            if (!modelFile.exists() || modelFile.length() == 0L) {
+                                call.respondText("Error: Model file '${model.name}' (${model.downloadFileName}) is not downloaded on device yet. Please download it in the Gallery App first.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            var initError: String? = null
+                            suspendCoroutine { continuation ->
+                                LlmChatModelHelper.initialize(
+                                    context = ctx,
+                                    model = model,
+                                    supportImage = model.llmSupportImage,
+                                    supportAudio = model.llmSupportAudio,
+                                    onDone = { errorMsg ->
+                                        if (errorMsg.isNotEmpty()) initError = errorMsg
+                                        continuation.resume(Unit)
+                                    }
+                                )
+                            }
+
+                            if (initError != null || model.instance == null) {
+                                call.respondText("Error initializing model '${model.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
+                                return@post
+                            }
+                        }
+
+                        if (model.instance == null) {
+                            call.respondText("Error: Active model '${model.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
                             return@post
                         }
                         
@@ -130,9 +178,51 @@ class PocketNodeServer {
                             return@post
                         }
 
-                        val audioModel = PocketNodeState.activeAudioModel ?: PocketNodeState.activeChatModel
-                        if (audioModel == null || audioModel.instance == null) {
-                            call.respondText("Error: No active audio/STT model initialized (e.g. Whisper-Large-V3-Turbo or Gemma 3n). Please open an audio-capable model first.", status = HttpStatusCode.ServiceUnavailable)
+                        val ctx = context
+                        var audioModel = PocketNodeState.activeAudioModel ?: PocketNodeState.activeChatModel
+                        if (audioModel == null && ctx != null) {
+                            val allModels = PocketNodeModelResolver.getAllModels(ctx)
+                            val audioCapable = allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") }
+                            audioModel = audioCapable.find { java.io.File(it.getPath(ctx)).exists() } ?: audioCapable.firstOrNull() ?: allModels.firstOrNull()
+                            if (audioModel != null) {
+                                PocketNodeState.activeAudioModel = audioModel
+                            }
+                        }
+
+                        if (audioModel == null) {
+                            call.respondText("Error: No active audio/STT model selected. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
+                            return@post
+                        }
+
+                        if (audioModel.instance == null && ctx != null) {
+                            val modelFile = java.io.File(audioModel.getPath(ctx))
+                            if (!modelFile.exists() || modelFile.length() == 0L) {
+                                call.respondText("Error: Audio model file '${audioModel.name}' (${audioModel.downloadFileName}) is not downloaded on device yet. Please download it in the app first.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            var initError: String? = null
+                            suspendCoroutine { continuation ->
+                                LlmChatModelHelper.initialize(
+                                    context = ctx,
+                                    model = audioModel,
+                                    supportImage = audioModel.llmSupportImage,
+                                    supportAudio = audioModel.llmSupportAudio,
+                                    onDone = { errorMsg ->
+                                        if (errorMsg.isNotEmpty()) initError = errorMsg
+                                        continuation.resume(Unit)
+                                    }
+                                )
+                            }
+
+                            if (initError != null || audioModel.instance == null) {
+                                call.respondText("Error initializing audio model '${audioModel.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
+                                return@post
+                            }
+                        }
+
+                        if (audioModel.instance == null) {
+                            call.respondText("Error: Audio model '${audioModel.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
                             return@post
                         }
 
