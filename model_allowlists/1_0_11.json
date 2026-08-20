@@ -5,9 +5,9 @@
       "modelId": "litert-community/gemma-4-E2B-it-litert-lm",
       "modelFile": "gemma-4-E2B-it.litertlm",
       "description": "A variant of Gemma 4 E2B ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/docs/api/kotlin/getting_started.md). It supports multi-modality input, with up to 32K context length.",
-      "sizeInBytes": 2583085056,
+      "sizeInBytes": 2588147712,
       "minDeviceMemoryInGb": 8,
-      "commitHash": "7fa1d78473894f7e736a21d920c3aa80f950c0db",
+      "commitHash": "6b78abd019e61a1ca4cbe3b212d2c9ce8ff38a94",
       "llmSupportImage": true,
       "llmSupportAudio": true,
       "llmSupportThinking": true,
@@ -40,9 +40,9 @@
       "modelId": "litert-community/gemma-4-E4B-it-litert-lm",
       "modelFile": "gemma-4-E4B-it.litertlm",
       "description": "A variant of Gemma 4 E4B ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/docs/api/kotlin/getting_started.md). It supports multi-modality input, with up to 32K context length.",
-      "sizeInBytes": 3654467584,
+      "sizeInBytes": 3659530240,
       "minDeviceMemoryInGb": 12,
-      "commitHash": "9695417f248178c63a9f318c6e0c56cb917cb837",
+      "commitHash": "2eee7ac325f20eb8c9ac1d0e972f7c84663062da",
       "llmSupportImage": true,
       "llmSupportAudio": true,
       "llmSupportThinking": true,
@@ -77,7 +77,7 @@
       "description": "A variant of [Gemma 3n E2B](https://ai.google.dev/gemma/docs/gemma-3n) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md). It supports text, vision, and audio input, with 4096 context length.",
       "sizeInBytes": 3655827456,
       "minDeviceMemoryInGb": 8,
-      "commitHash": "ba9ca88da013b537b6ed38108be609b8db1c3a16",
+      "commitHash": "c03b6f60b8da6c5400b6838a2cf26420f80c0a01",
       "llmSupportImage": true,
       "llmSupportAudio": true,
       "defaultConfig": {
@@ -129,7 +129,7 @@
       "description": "A variant of [google/Gemma-3-1B-IT](https://huggingface.co/google/Gemma-3-1B-IT) with 4-bit quantization ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
       "sizeInBytes": 584417280,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "42d538a932e8d5b12e6b3b455f5572560bd60b2c",
+      "commitHash": "6d54daa71cfbffba6b2843c08eeb1a27e7430bf0",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -142,6 +142,26 @@
         "llm_prompt_lab"
       ],
       "bestForTaskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "Gemma3-270M-IT",
+      "modelId": "litert-community/gemma-3-270m-it",
+      "modelFile": "gemma3-270m-it-q8.litertlm",
+      "description": "A lightweight variant of [google/gemma-3-270m-it](https://huggingface.co/google/gemma-3-270m-it) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
+      "sizeInBytes": 304005120,
+      "minDeviceMemoryInGb": 4,
+      "commitHash": "9d2093270fb5aa49a986b49b5779d763dde7b630",
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 1.0,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
       ]
@@ -167,17 +187,77 @@
       ]
     },
     {
+      "name": "Qwen3-0.6B",
+      "modelId": "litert-community/Qwen3-0.6B",
+      "modelFile": "qwen3_0_6b_mixed_int4.litertlm",
+      "description": "A variant of [Qwen/Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B) with mixed int4 quantization ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
+      "sizeInBytes": 497664000,
+      "minDeviceMemoryInGb": 6,
+      "commitHash": "8414150f2e9dcc82449bcc9c5abc404b399a4d06",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxTokens": 4096,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
       "name": "DeepSeek-R1-Distill-Qwen-1.5B",
       "modelId": "litert-community/DeepSeek-R1-Distill-Qwen-1.5B",
       "modelFile": "DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv4096.litertlm",
       "description": "A variant of [deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
       "sizeInBytes": 1833451520,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "e34bb88632342d1f9640bad579a45134eb1cf988",
+      "commitHash": "2f8b8ee90d8f93b15305b699e8772b277d074a9a",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
         "temperature": 1.0,
+        "maxTokens": 4096,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "LFM2.5-1.2B-Instruct",
+      "modelId": "litert-community/LFM2.5-1.2B-Instruct",
+      "modelFile": "LFM2.5-1.2B-Instruct_int4.litertlm",
+      "description": "A variant of [Liquid AI LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
+      "sizeInBytes": 736015744,
+      "minDeviceMemoryInGb": 6,
+      "commitHash": "82dd33e3afbdc92853293212a08d5aaa6d466c85",
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 0.7,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "Phi-4-mini-instruct",
+      "modelId": "litert-community/Phi-4-mini-instruct",
+      "modelFile": "Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+      "description": "A variant of [microsoft/Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
+      "sizeInBytes": 3910090752,
+      "minDeviceMemoryInGb": 8,
+      "commitHash": "8cd368be75fdb94d5a6f6f5b40f1ab22a6c2543e",
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 0.7,
         "maxTokens": 4096,
         "accelerators": "gpu,cpu"
       },
@@ -193,7 +273,7 @@
       "description": "Fine-tuned Function Gemma 270M model for Tiny Garden.",
       "sizeInBytes": 288964608,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "c205853ff82da86141a1105faa2344a8b176dfe7",
+      "commitHash": "aca35636dccadc77499c9843d9ff044b7e06566e",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -215,7 +295,7 @@
       "description": "Fine-tuned Function Gemma 270M model for Mobile Actions.",
       "sizeInBytes": 288964608,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "38942192c9b723af836d489074823ff33d4a3e7a",
+      "commitHash": "f1c7b940a5a2598fb940648fb3cfcc745b18184b",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -228,29 +308,6 @@
       ],
       "bestForTaskTypes": [
         "llm_mobile_actions"
-      ]
-    },
-    {
-      "name": "Whisper-Large-V3-Turbo",
-      "modelId": "litert-community/whisper-large-v3-turbo",
-      "modelFile": "whisper_large_v3_turbo_30s_i4.tflite",
-      "description": "Whisper Large V3 Turbo model converted for LiteRT-LM, providing fast and highly accurate speech-to-text transcription in Spanish and multiple languages.",
-      "sizeInBytes": 755273648,
-      "minDeviceMemoryInGb": 6,
-      "commitHash": "4e3af6a1597a54b6e47d2899cf4f6c39932b0b7e",
-      "llmSupportAudio": true,
-      "defaultConfig": {
-        "topK": 40,
-        "topP": 0.95,
-        "temperature": 0.0,
-        "maxTokens": 1024,
-        "accelerators": "cpu,gpu"
-      },
-      "taskTypes": [
-        "llm_ask_audio"
-      ],
-      "bestForTaskTypes": [
-        "llm_ask_audio"
       ]
     }
   ]
