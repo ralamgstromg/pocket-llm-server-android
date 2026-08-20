@@ -52,3 +52,6 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 8. **Resilient Vision/Audio Encoder Fallback in LiteRT-LM (`LlmChatModelHelper.kt`)**:
    - Fixed `INVALID_ARGUMENT: The Vision Encoder model must have exactly one signature but got 3` error when initializing models with `llmSupportImage` flag in `.litertlm` files without vision signatures.
    - Implemented automatic retry/fallback in `LlmChatModelHelper.kt`: if initializing `EngineConfig` with `visionBackend` or `audioBackend` fails due to signature/encoder mismatch, `LlmChatModelHelper` gracefully retries in text-only mode (`visionBackend = null`), guaranteeing successful model initialization across all model architectures.
+9. **Observable Reactive Server State (`PocketNodeState.kt` & `PocketNodeService.kt`)**:
+   - Converted `PocketNodeState.isServerRunning` to a Jetpack Compose observable state (`var isServerRunning by mutableStateOf(false)`).
+   - Updated `PocketNodeService.kt` to set `isServerRunning = true` on `onStartCommand` and `isServerRunning = false` on `onDestroy`, ensuring immediate real-time UI state recomposition in `PocketNodeServerDialog.kt` (updating badge to **🟢 Servidor HTTP Activo (http://localhost:8080)** and button text to **"Detener Servidor"**).

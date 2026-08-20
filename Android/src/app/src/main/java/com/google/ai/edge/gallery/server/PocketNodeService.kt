@@ -44,6 +44,7 @@ class PocketNodeService : Service() {
 
         // Start Ktor HTTP Server
         server.start(this)
+        PocketNodeState.isServerRunning = true
 
         // Create the persistent notification required by Android for Foreground Services
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -62,6 +63,7 @@ class PocketNodeService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         server.stop()
+        PocketNodeState.isServerRunning = false
     }
 
     override fun onBind(intent: Intent?): IBinder? {

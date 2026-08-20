@@ -1,6 +1,9 @@
 package com.google.ai.edge.gallery.server
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.google.ai.edge.gallery.data.Model
 
 object PocketNodeState {
@@ -10,14 +13,15 @@ object PocketNodeState {
     var preferredChatModelName: String = ""
     var preferredAudioModelName: String = ""
 
+    // Observable Compose state for reactive UI updates
+    var isServerRunning by mutableStateOf(false)
+
     // Backward compatibility property for completions
     var activeModel: Model?
         get() = activeChatModel ?: activeAudioModel
         set(value) {
             activeChatModel = value
         }
-
-    var isServerRunning: Boolean = false
 
     private const val PREFS_NAME = "pocket_node_prefs"
     private const val KEY_CHAT_MODEL = "preferred_chat_model"
