@@ -63,3 +63,6 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
    - Added `serverMutexMap` with `Mutex.withLock` to serialize concurrent HTTP inference requests per model, preventing native `SIGABRT` / `SIGSEGV` LiteRT-LM C++ crashes.
    - Guarded `suspendCoroutine` resumptions with `AtomicBoolean` to prevent `IllegalStateException: Already resumed` crashes.
    - Wrapped route handlers in global `try-catch (t: Throwable)` to gracefully return HTTP 500 JSON error responses instead of crashing the process.
+12. **Code Deduplication & Server Simplification (`PocketNodeServer.kt`)**:
+   - Extracted `resolveAndInitModel()` and `executeModelInference()` helper methods to centralize model resolution, auto-initialization, locking, and coroutine resumption.
+   - Eliminated over 120 lines of duplicate code between `/v1/chat/completions` and `/v1/audio/transcriptions`.
