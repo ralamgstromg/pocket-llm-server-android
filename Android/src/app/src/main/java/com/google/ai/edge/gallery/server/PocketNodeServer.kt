@@ -236,11 +236,11 @@ class PocketNodeServer {
                         val prompt = when {
                             !promptParam.isNullOrBlank() -> promptParam!!
                             languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
-                                "Transcribe el audio adjunto de forma precisa a texto en español."
+                                "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
                             !languageParam.isNullOrBlank() ->
-                                "Transcribe the audio accurately to text in language: ${languageParam}."
+                                "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
                             else ->
-                                "Transcribe the following audio recording into accurate text."
+                                "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
                         }
 
                         var fullResponse = ""
@@ -263,7 +263,7 @@ class PocketNodeServer {
                             )
                         }
 
-                        val cleanText = fullResponse.trim()
+                        val cleanText = sanitizeSpokenText(fullResponse)
                         if (responseFormatParam.equals("text", ignoreCase = true)) {
                             call.respondText(cleanText, ContentType.Text.Plain)
                         } else {
@@ -279,6 +279,42 @@ class PocketNodeServer {
         PocketNodeState.isServerRunning = false
         server?.stop(1000, 2000, TimeUnit.MILLISECONDS)
         server = null
+    }
+
+    private fun sanitizeSpokenText(rawInput: String): String {
+        var text = rawInput
+        // 1. Remove thinking / reasoning blocks <think>...</think>
+        text = text.replace(Regex("(?s)<think>.*?</think>"), "")
+        text = text.replace(Regex("(?s)<transcript>.*?</transcript>"), "")
+
+        // 2. Remove code blocks ```text ... ```
+        text = text.replace(Regex("(?s)```[a-zA-Z]*\\s*(.*?)\\s*```"), "$1")
+
+        // 3. Remove common intro prefixes
+        val prefixRegex = Regex(
+            "(?i)^\\s*((" +
+            "here is the transcription|" +
+            "here is the transcribed text|" +
+            "transcription|" +
+            "transcripci[oó]n|" +
+            "el usuario dijo|" +
+            "el audio dice|" +
+            "the user said|" +
+            "the speaker said|" +
+            "spoken text|" +
+            "texto hablado|" +
+            "text" +
+            ")\\s*:\\s*)"
+        )
+        text = text.replace(prefixRegex, "")
+
+        // 4. Strip surrounding quotes and whitespace
+        text = text.trim()
+        if ((text.startsWith("\"") && text.endsWith("\"")) || (text.startsWith("'") && text.endsWith("'")) || (text.startsWith("«") && text.endsWith("»"))) {
+            text = text.substring(1, text.length - 1).trim()
+        }
+
+        return text
     }
 }
 

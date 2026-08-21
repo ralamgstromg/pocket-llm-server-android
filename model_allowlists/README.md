@@ -55,3 +55,6 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 9. **Observable Reactive Server State (`PocketNodeState.kt` & `PocketNodeService.kt`)**:
    - Converted `PocketNodeState.isServerRunning` to a Jetpack Compose observable state (`var isServerRunning by mutableStateOf(false)`).
    - Updated `PocketNodeService.kt` to set `isServerRunning = true` on `onStartCommand` and `isServerRunning = false` on `onDestroy`, ensuring immediate real-time UI state recomposition in `PocketNodeServerDialog.kt` (updating badge to **🟢 Servidor HTTP Activo (http://localhost:8080)** and button text to **"Detener Servidor"**).
+10. **Strict Spoken Text Sanitization in Transcribe API (`PocketNodeServer.kt`)**:
+   - Updated prompt system instruction for STT to instruct model: *"Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."*
+   - Added `sanitizeSpokenText(rawInput: String)` in `PocketNodeServer.kt` to filter out reasoning tags (`<think>...</think>`), code blocks, intro labels (`"Transcription:"`, `"El usuario dijo:"`), and surrounding quotes before returning the final response.
