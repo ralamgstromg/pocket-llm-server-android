@@ -1,6 +1,7 @@
 package com.google.ai.edge.gallery.server
 
 import android.content.Context
+import android.util.Log
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -14,11 +15,15 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.engine.EmbeddedServer
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -39,6 +44,7 @@ data class TranscriptionResponse(val text: String)
 
 class PocketNodeServer {
     private var server: EmbeddedServer<*, *>? = null
+    private val serverMutexMap = ConcurrentHashMap<String, Mutex>()
 
     fun start(context: Context? = null) {
         if (server != null) return
@@ -60,214 +66,250 @@ class PocketNodeServer {
                     }
 
                     post("/v1/chat/completions") {
-                        val req = call.receive<ChatRequest>()
-                        val prompt = req.messages.lastOrNull()?.content ?: ""
-                        
-                        PocketNodeState.syncSharedModels()
-                        val ctx = context
-                        var model = if (req.model.isNotEmpty() && ctx != null) {
-                            PocketNodeModelResolver.findModelByNameOrId(ctx, req.model)
-                        } else null
+                        try {
+                            val req = call.receive<ChatRequest>()
+                            val prompt = req.messages.lastOrNull()?.content ?: ""
 
-                        if (model == null) {
-                            model = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
-                        }
+                            PocketNodeState.syncSharedModels()
+                            val ctx = context
+                            var model = if (req.model.isNotEmpty() && ctx != null) {
+                                PocketNodeModelResolver.findModelByNameOrId(ctx, req.model)
+                            } else null
 
-                        if (model == null && ctx != null) {
-                            val allModels = PocketNodeModelResolver.getAllModels(ctx)
-                            model = allModels.find { java.io.File(it.getPath(ctx)).exists() } ?: allModels.firstOrNull()
-                            if (model != null) {
-                                PocketNodeState.activeChatModel = model
-                            }
-                        }
-
-                        if (model == null) {
-                            call.respondText("Error: No chat model available. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
-                            return@post
-                        }
-
-                        if (model.instance == null && ctx != null) {
-                            val modelFile = java.io.File(model.getPath(ctx))
-                            if (!modelFile.exists() || modelFile.length() == 0L) {
-                                call.respondText("Error: Model file '${model.name}' (${model.downloadFileName}) is not downloaded on device yet. Please download it in the Gallery App first.", status = HttpStatusCode.ServiceUnavailable)
-                                return@post
+                            if (model == null) {
+                                model = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
                             }
 
-                            var initError: String? = null
-                            suspendCoroutine { continuation ->
-                                LlmChatModelHelper.initialize(
-                                    context = ctx,
-                                    model = model,
-                                    supportImage = model.llmSupportImage,
-                                    supportAudio = model.llmSupportAudio,
-                                    onDone = { errorMsg ->
-                                        if (errorMsg.isNotEmpty()) initError = errorMsg
-                                        continuation.resume(Unit)
-                                    }
-                                )
-                            }
-
-                            if (initError != null || model.instance == null) {
-                                call.respondText("Error initializing model '${model.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
-                                return@post
-                            }
-                        }
-
-                        if (model.instance == null) {
-                            call.respondText("Error: Active model '${model.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
-                            return@post
-                        }
-                        
-                        var fullResponse = ""
-                        suspendCoroutine { continuation ->
-                            LlmChatModelHelper.runInference(
-                                model = model,
-                                input = prompt,
-                                resultListener = { partialResult, done, _ ->
-                                    fullResponse += partialResult
-                                    if (done) {
-                                        continuation.resume(Unit)
-                                    }
-                                },
-                                cleanUpListener = {},
-                                onError = { errorMsg ->
-                                    fullResponse += "\\n[Error: $errorMsg]"
-                                    continuation.resume(Unit)
+                            if (model == null && ctx != null) {
+                                val allModels = PocketNodeModelResolver.getAllModels(ctx)
+                                model = allModels.find { java.io.File(it.getPath(ctx)).exists() } ?: allModels.firstOrNull()
+                                if (model != null) {
+                                    PocketNodeState.activeChatModel = model
                                 }
-                            )
-                        }
+                            }
 
-                        val reply = ChatResponse(
-                            id = "chatcmpl-${System.currentTimeMillis()}",
-                            choices = listOf(Choice(Message("assistant", fullResponse)))
-                        )
-                        call.respond(reply)
+                            if (model == null) {
+                                call.respondText("Error: No chat model available. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            if (model.instance == null && ctx != null) {
+                                val modelFile = java.io.File(model.getPath(ctx))
+                                if (!modelFile.exists() || modelFile.length() == 0L) {
+                                    call.respondText("Error: Model file '${model.name}' (${model.downloadFileName}) is not downloaded on device yet. Please download it in the Gallery App first.", status = HttpStatusCode.ServiceUnavailable)
+                                    return@post
+                                }
+
+                                var initError: String? = null
+                                suspendCoroutine { continuation ->
+                                    LlmChatModelHelper.initialize(
+                                        context = ctx,
+                                        model = model,
+                                        supportImage = model.llmSupportImage,
+                                        supportAudio = model.llmSupportAudio,
+                                        onDone = { errorMsg ->
+                                            if (errorMsg.isNotEmpty()) initError = errorMsg
+                                            continuation.resume(Unit)
+                                        }
+                                    )
+                                }
+
+                                if (initError != null || model.instance == null) {
+                                    call.respondText("Error initializing model '${model.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
+                                    return@post
+                                }
+                            }
+
+                            if (model.instance == null) {
+                                call.respondText("Error: Active model '${model.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
+                            var fullResponse = ""
+                            mutex.withLock {
+                                val isResumed = AtomicBoolean(false)
+                                try {
+                                    suspendCoroutine { continuation ->
+                                        LlmChatModelHelper.runInference(
+                                            model = model,
+                                            input = prompt,
+                                            resultListener = { partialResult, done, _ ->
+                                                fullResponse += partialResult
+                                                if (done && isResumed.compareAndSet(false, true)) {
+                                                    continuation.resume(Unit)
+                                                }
+                                            },
+                                            cleanUpListener = {},
+                                            onError = { errorMsg ->
+                                                fullResponse += "\n[Error: $errorMsg]"
+                                                if (isResumed.compareAndSet(false, true)) {
+                                                    continuation.resume(Unit)
+                                                }
+                                            }
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("PocketNodeServer", "Chat inference failed", e)
+                                    if (isResumed.compareAndSet(false, true)) {
+                                        fullResponse += "\n[Error: ${e.message}]"
+                                    }
+                                }
+                            }
+
+                            val reply = ChatResponse(
+                                id = "chatcmpl-${System.currentTimeMillis()}",
+                                choices = listOf(Choice(Message("assistant", fullResponse)))
+                            )
+                            call.respond(reply)
+                        } catch (t: Throwable) {
+                            Log.e("PocketNodeServer", "Unhandled error in /v1/chat/completions", t)
+                            call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
+                        }
                     }
 
                     post("/v1/audio/transcriptions") {
-                        var rawAudioBytes: ByteArray? = null
-                        var promptParam: String? = null
-                        var languageParam: String? = null
-                        var responseFormatParam: String? = null
-
                         try {
-                            val multipart = call.receiveMultipart()
-                            multipart.forEachPart { part ->
-                                when (part) {
-                                    is PartData.FileItem -> {
-                                        rawAudioBytes = part.streamProvider().readBytes()
-                                    }
-                                    is PartData.FormItem -> {
-                                        when (part.name) {
-                                            "prompt" -> promptParam = part.value
-                                            "language" -> languageParam = part.value
-                                            "response_format" -> responseFormatParam = part.value
+                            var rawAudioBytes: ByteArray? = null
+                            var promptParam: String? = null
+                            var languageParam: String? = null
+                            var responseFormatParam: String? = null
+
+                            try {
+                                val multipart = call.receiveMultipart()
+                                multipart.forEachPart { part ->
+                                    when (part) {
+                                        is PartData.FileItem -> {
+                                            rawAudioBytes = part.streamProvider().readBytes()
                                         }
+                                        is PartData.FormItem -> {
+                                            when (part.name) {
+                                                "prompt" -> promptParam = part.value
+                                                "language" -> languageParam = part.value
+                                                "response_format" -> responseFormatParam = part.value
+                                            }
+                                        }
+                                        else -> {}
                                     }
-                                    else -> {}
+                                    part.dispose()
                                 }
-                                part.dispose()
-                            }
-                        } catch (e: Exception) {
-                            call.respondText("Error parsing multipart audio request: ${e.message}", status = HttpStatusCode.BadRequest)
-                            return@post
-                        }
-
-                        if (rawAudioBytes == null || rawAudioBytes!!.isEmpty()) {
-                            call.respondText("Error: No audio file uploaded in multipart field 'file'.", status = HttpStatusCode.BadRequest)
-                            return@post
-                        }
-
-                        val ctx = context
-                        var audioModel = PocketNodeState.activeAudioModel ?: PocketNodeState.activeChatModel
-                        if (audioModel == null && ctx != null) {
-                            val allModels = PocketNodeModelResolver.getAllModels(ctx)
-                            val audioCapable = allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") }
-                            audioModel = audioCapable.find { java.io.File(it.getPath(ctx)).exists() } ?: audioCapable.firstOrNull() ?: allModels.firstOrNull()
-                            if (audioModel != null) {
-                                PocketNodeState.activeAudioModel = audioModel
-                            }
-                        }
-
-                        if (audioModel == null) {
-                            call.respondText("Error: No active audio/STT model selected. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
-                            return@post
-                        }
-
-                        if (audioModel.instance == null && ctx != null) {
-                            val modelFile = java.io.File(audioModel.getPath(ctx))
-                            if (!modelFile.exists() || modelFile.length() == 0L) {
-                                call.respondText("Error: Audio model file '${audioModel.name}' (${audioModel.downloadFileName}) is not downloaded on device yet. Please download it in the app first.", status = HttpStatusCode.ServiceUnavailable)
+                            } catch (e: Exception) {
+                                call.respondText("Error parsing multipart audio request: ${e.message}", status = HttpStatusCode.BadRequest)
                                 return@post
                             }
 
-                            var initError: String? = null
-                            suspendCoroutine { continuation ->
-                                LlmChatModelHelper.initialize(
-                                    context = ctx,
-                                    model = audioModel,
-                                    supportImage = audioModel.llmSupportImage,
-                                    supportAudio = audioModel.llmSupportAudio,
-                                    onDone = { errorMsg ->
-                                        if (errorMsg.isNotEmpty()) initError = errorMsg
-                                        continuation.resume(Unit)
-                                    }
-                                )
-                            }
-
-                            if (initError != null || audioModel.instance == null) {
-                                call.respondText("Error initializing audio model '${audioModel.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
+                            if (rawAudioBytes == null || rawAudioBytes!!.isEmpty()) {
+                                call.respondText("Error: No audio file uploaded in multipart field 'file'.", status = HttpStatusCode.BadRequest)
                                 return@post
                             }
-                        }
 
-                        if (audioModel.instance == null) {
-                            call.respondText("Error: Audio model '${audioModel.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
-                            return@post
-                        }
-
-                        // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
-                        val processedAudioBytes = if (context != null) {
-                            AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
-                        } else {
-                            rawAudioBytes!!
-                        }
-
-                        val prompt = when {
-                            !promptParam.isNullOrBlank() -> promptParam!!
-                            languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
-                                "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
-                            !languageParam.isNullOrBlank() ->
-                                "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
-                            else ->
-                                "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
-                        }
-
-                        var fullResponse = ""
-                        suspendCoroutine { continuation ->
-                            LlmChatModelHelper.runInference(
-                                model = audioModel,
-                                input = prompt,
-                                audioClips = listOf(processedAudioBytes),
-                                resultListener = { partialResult, done, _ ->
-                                    fullResponse += partialResult
-                                    if (done) {
-                                        continuation.resume(Unit)
-                                    }
-                                },
-                                cleanUpListener = {},
-                                onError = { errorMsg ->
-                                    fullResponse += "\\n[Error: $errorMsg]"
-                                    continuation.resume(Unit)
+                            val ctx = context
+                            var audioModel = PocketNodeState.activeAudioModel ?: PocketNodeState.activeChatModel
+                            if (audioModel == null && ctx != null) {
+                                val allModels = PocketNodeModelResolver.getAllModels(ctx)
+                                val audioCapable = allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") }
+                                audioModel = audioCapable.find { java.io.File(it.getPath(ctx)).exists() } ?: audioCapable.firstOrNull() ?: allModels.firstOrNull()
+                                if (audioModel != null) {
+                                    PocketNodeState.activeAudioModel = audioModel
                                 }
-                            )
-                        }
+                            }
 
-                        val cleanText = sanitizeSpokenText(fullResponse)
-                        if (responseFormatParam.equals("text", ignoreCase = true)) {
-                            call.respondText(cleanText, ContentType.Text.Plain)
-                        } else {
-                            call.respond(TranscriptionResponse(text = cleanText))
+                            if (audioModel == null) {
+                                call.respondText("Error: No active audio/STT model selected. Please select a model in Pocket Node Server.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            if (audioModel.instance == null && ctx != null) {
+                                val modelFile = java.io.File(audioModel.getPath(ctx))
+                                if (!modelFile.exists() || modelFile.length() == 0L) {
+                                    call.respondText("Error: Audio model file '${audioModel.name}' (${audioModel.downloadFileName}) is not downloaded on device yet. Please download it in the app first.", status = HttpStatusCode.ServiceUnavailable)
+                                    return@post
+                                }
+
+                                var initError: String? = null
+                                suspendCoroutine { continuation ->
+                                    LlmChatModelHelper.initialize(
+                                        context = ctx,
+                                        model = audioModel,
+                                        supportImage = audioModel.llmSupportImage,
+                                        supportAudio = audioModel.llmSupportAudio,
+                                        onDone = { errorMsg ->
+                                            if (errorMsg.isNotEmpty()) initError = errorMsg
+                                            continuation.resume(Unit)
+                                        }
+                                    )
+                                }
+
+                                if (initError != null || audioModel.instance == null) {
+                                    call.respondText("Error initializing audio model '${audioModel.name}': ${initError ?: "Failed to load model into RAM"}", status = HttpStatusCode.InternalServerError)
+                                    return@post
+                                }
+                            }
+
+                            if (audioModel.instance == null) {
+                                call.respondText("Error: Audio model '${audioModel.name}' is not initialized in memory.", status = HttpStatusCode.ServiceUnavailable)
+                                return@post
+                            }
+
+                            // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
+                            val processedAudioBytes = if (context != null) {
+                                AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+                            } else {
+                                rawAudioBytes!!
+                            }
+
+                            val prompt = when {
+                                !promptParam.isNullOrBlank() -> promptParam!!
+                                languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
+                                    "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
+                                !languageParam.isNullOrBlank() ->
+                                    "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
+                                else ->
+                                    "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
+                            }
+
+                            val mutex = serverMutexMap.getOrPut(audioModel.name) { Mutex() }
+                            var fullResponse = ""
+                            mutex.withLock {
+                                val isResumed = AtomicBoolean(false)
+                                try {
+                                    suspendCoroutine { continuation ->
+                                        LlmChatModelHelper.runInference(
+                                            model = audioModel,
+                                            input = prompt,
+                                            audioClips = listOf(processedAudioBytes),
+                                            resultListener = { partialResult, done, _ ->
+                                                fullResponse += partialResult
+                                                if (done && isResumed.compareAndSet(false, true)) {
+                                                    continuation.resume(Unit)
+                                                }
+                                            },
+                                            cleanUpListener = {},
+                                            onError = { errorMsg ->
+                                                fullResponse += "\n[Error: $errorMsg]"
+                                                if (isResumed.compareAndSet(false, true)) {
+                                                    continuation.resume(Unit)
+                                                }
+                                            }
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("PocketNodeServer", "Audio inference failed", e)
+                                    if (isResumed.compareAndSet(false, true)) {
+                                        fullResponse += "\n[Error: ${e.message}]"
+                                    }
+                                }
+                            }
+
+                            val cleanText = sanitizeSpokenText(fullResponse)
+                            if (responseFormatParam.equals("text", ignoreCase = true)) {
+                                call.respondText(cleanText, ContentType.Text.Plain)
+                            } else {
+                                call.respond(TranscriptionResponse(text = cleanText))
+                            }
+                        } catch (t: Throwable) {
+                            Log.e("PocketNodeServer", "Unhandled error in /v1/audio/transcriptions", t)
+                            call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
                         }
                     }
                 }

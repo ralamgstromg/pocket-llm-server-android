@@ -31,11 +31,13 @@ object AudioDecoderHelper {
         }
 
         var tempFile: File? = null
+        var extractor: MediaExtractor? = null
+        var codec: MediaCodec? = null
         try {
             tempFile = File.createTempFile("temp_audio_", ".tmp", context.cacheDir)
             FileOutputStream(tempFile).use { it.write(audioBytes) }
 
-            val extractor = MediaExtractor()
+            extractor = MediaExtractor()
             extractor.setDataSource(tempFile.absolutePath)
 
             var audioTrackIndex = -1
@@ -55,13 +57,12 @@ object AudioDecoderHelper {
 
             if (audioTrackIndex == -1 || format == null || mime == null) {
                 Log.w(TAG, "No audio track found via MediaExtractor. Returning raw bytes.")
-                extractor.release()
                 return audioBytes
             }
 
             extractor.selectTrack(audioTrackIndex)
 
-            val codec = MediaCodec.createDecoderByType(mime)
+            codec = MediaCodec.createDecoderByType(mime)
             codec.configure(format, null, null, 0)
             codec.start()
 
@@ -115,10 +116,6 @@ object AudioDecoderHelper {
                 }
             }
 
-            codec.stop()
-            codec.release()
-            extractor.release()
-
             val rawPcmBytes = pcmOutputStream.toByteArray()
             if (rawPcmBytes.isEmpty()) {
                 Log.w(TAG, "Decoded PCM stream was empty. Returning original audio bytes.")
@@ -158,6 +155,15 @@ object AudioDecoderHelper {
             Log.e(TAG, "Failed to decode audio via MediaCodec", e)
             return audioBytes
         } finally {
+            try {
+                codec?.stop()
+            } catch (ignored: Exception) {}
+            try {
+                codec?.release()
+            } catch (ignored: Exception) {}
+            try {
+                extractor?.release()
+            } catch (ignored: Exception) {}
             tempFile?.delete()
         }
     }

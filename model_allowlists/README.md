@@ -58,3 +58,8 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 10. **Strict Spoken Text Sanitization in Transcribe API (`PocketNodeServer.kt`)**:
    - Updated prompt system instruction for STT to instruct model: *"Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."*
    - Added `sanitizeSpokenText(rawInput: String)` in `PocketNodeServer.kt` to filter out reasoning tags (`<think>...</think>`), code blocks, intro labels (`"Transcription:"`, `"El usuario dijo:"`), and surrounding quotes before returning the final response.
+11. **Anti-Crash & Resource Cleanup Protections (`AudioDecoderHelper.kt` & `PocketNodeServer.kt`)**:
+   - Guaranteed full cleanup of `MediaCodec`, `MediaExtractor`, and temporary audio files using strict nested `try-finally` blocks, preventing Android file descriptor and C++ native memory leaks.
+   - Added `serverMutexMap` with `Mutex.withLock` to serialize concurrent HTTP inference requests per model, preventing native `SIGABRT` / `SIGSEGV` LiteRT-LM C++ crashes.
+   - Guarded `suspendCoroutine` resumptions with `AtomicBoolean` to prevent `IllegalStateException: Already resumed` crashes.
+   - Wrapped route handlers in global `try-catch (t: Throwable)` to gracefully return HTTP 500 JSON error responses instead of crashing the process.
