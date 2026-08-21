@@ -49,16 +49,18 @@ class PocketNodeServer {
     fun start(context: Context? = null) {
         if (server != null) return
         PocketNodeState.isServerRunning = true
+        PocketNodeState.lastStartupError = null
 
         CoroutineScope(Dispatchers.IO).launch {
-            server = embeddedServer(CIO, port = 8080) {
-                install(CORS) {
-                    anyHost() // Allow connections from n8n or any local network client
-                    allowHeader(io.ktor.http.HttpHeaders.ContentType)
-                }
-                install(ContentNegotiation) {
-                    json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
-                }
+            try {
+                val newServer = embeddedServer(CIO, port = 8080) {
+                    install(CORS) {
+                        anyHost() // Allow connections from n8n or any local network client
+                        allowHeader(io.ktor.http.HttpHeaders.ContentType)
+                    }
+                    install(ContentNegotiation) {
+                        json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
+                    }
 
                 routing {
                     get("/") {
@@ -159,9 +161,16 @@ class PocketNodeServer {
                         }
                     }
                 }
-            }.start(wait = false)
+            }
+            server = newServer.start(wait = false)
+        } catch (e: Exception) {
+            Log.e("PocketNodeServer", "Failed to start Ktor HTTP server", e)
+            PocketNodeState.isServerRunning = false
+            PocketNodeState.lastStartupError = "Error al iniciar servidor (puerto 8080 en uso o error de red): ${e.message}"
+            server = null
         }
     }
+}
 
     private suspend fun resolveAndInitModel(
         reqModelName: String,

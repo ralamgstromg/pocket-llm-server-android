@@ -67,6 +67,12 @@ fun PocketNodeServerDialog(
         }
     }
 
+    LaunchedEffect(PocketNodeState.lastStartupError) {
+        if (!PocketNodeState.lastStartupError.isNullOrEmpty()) {
+            statusMessage = "❌ ${PocketNodeState.lastStartupError}"
+        }
+    }
+
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             modifier = Modifier
@@ -279,10 +285,14 @@ fun PocketNodeServerDialog(
                                             isInitializing = false
                                             if (errorMsg.isEmpty()) {
                                                 statusMessage = "✅ Modelo cargado exitosamente."
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                    context.startForegroundService(intent)
-                                                } else {
-                                                    context.startService(intent)
+                                                try {
+                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                                        context.startForegroundService(intent)
+                                                    } else {
+                                                        context.startService(intent)
+                                                    }
+                                                } catch (e: Exception) {
+                                                    statusMessage = "❌ Error iniciando servicio de servidor: ${e.message}"
                                                 }
                                             } else {
                                                 statusMessage = "❌ Error cargando modelo: $errorMsg"
@@ -291,10 +301,14 @@ fun PocketNodeServerDialog(
                                     )
                                 }
                             } else {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    context.startForegroundService(intent)
-                                } else {
-                                    context.startService(intent)
+                                try {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        context.startForegroundService(intent)
+                                    } else {
+                                        context.startService(intent)
+                                    }
+                                } catch (e: Exception) {
+                                    statusMessage = "❌ Error al iniciar servicio HTTP: ${e.message}"
                                 }
                             }
                         }

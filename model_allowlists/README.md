@@ -66,3 +66,7 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 12. **Code Deduplication & Server Simplification (`PocketNodeServer.kt`)**:
    - Extracted `resolveAndInitModel()` and `executeModelInference()` helper methods to centralize model resolution, auto-initialization, locking, and coroutine resumption.
    - Eliminated over 120 lines of duplicate code between `/v1/chat/completions` and `/v1/audio/transcriptions`.
+13. **HTTP Web Server Startup Exception Protections & UI Error Display (`PocketNodeService.kt`, `PocketNodeServer.kt`, `PocketNodeServerDialog.kt`)**:
+   - Fixed Android 14+ (`API 34/35`) Foreground Service type crash by passing `ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC` to `startForeground(...)`.
+   - Wrapped Ktor `embeddedServer(CIO, port = 8080)` startup in `try-catch` to capture socket/port bind exceptions safely, recording `PocketNodeState.lastStartupError`.
+   - Added `LaunchedEffect(PocketNodeState.lastStartupError)` in `PocketNodeServerDialog.kt` to display exact error details in `statusMessage` with `❌` icon instead of crashing the app.

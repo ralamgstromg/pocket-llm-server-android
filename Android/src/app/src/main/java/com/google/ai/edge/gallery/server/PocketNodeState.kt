@@ -15,6 +15,7 @@ object PocketNodeState {
 
     // Observable Compose state for reactive UI updates
     var isServerRunning by mutableStateOf(false)
+    var lastStartupError by mutableStateOf<String?>(null)
 
     // Backward compatibility property for completions
     var activeModel: Model?
