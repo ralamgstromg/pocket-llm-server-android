@@ -54,11 +54,16 @@ fun PocketNodeServerDialog(
     var chatDropdownExpanded by remember { mutableStateOf(false) }
     var audioDropdownExpanded by remember { mutableStateOf(false) }
 
+    var apiKeyInput by remember { mutableStateOf(PocketNodeState.apiKey) }
+    var corsEnabledInput by remember { mutableStateOf(PocketNodeState.corsEnabled) }
+
     var isInitializing by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
+        apiKeyInput = PocketNodeState.apiKey
+        corsEnabledInput = PocketNodeState.corsEnabled
         if (selectedChatModelName.isEmpty() && allModels.isNotEmpty()) {
             selectedChatModelName = PocketNodeState.preferredChatModelName.ifEmpty { allModels.first().name }
         }
@@ -169,7 +174,7 @@ fun PocketNodeServerDialog(
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = chatDropdownExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -217,7 +222,7 @@ fun PocketNodeServerDialog(
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = audioDropdownExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -243,6 +248,38 @@ fun PocketNodeServerDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Seguridad de la API (se aplica al iniciar el servidor)
+                Text(
+                    text = "API Key (Authorization: Bearer):",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = apiKeyInput,
+                    onValueChange = { apiKeyInput = it },
+                    singleLine = true,
+                    placeholder = { Text("Vacío = sin autenticación") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Permitir CORS (navegadores)", fontSize = 14.sp)
+                    Switch(checked = corsEnabledInput, onCheckedChange = { corsEnabledInput = it })
+                }
+                Text(
+                    text = "Los cambios de seguridad se aplican al (re)iniciar el servidor.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Action Toggle Button
@@ -259,6 +296,7 @@ fun PocketNodeServerDialog(
                         }
                         PocketNodeState.syncSharedModels()
                         PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
+                        PocketNodeState.saveSecurityPreferences(context, apiKeyInput, corsEnabledInput)
 
                         val intent = Intent(context, PocketNodeService::class.java)
                         if (PocketNodeState.isServerRunning) {

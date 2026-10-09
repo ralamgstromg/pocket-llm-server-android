@@ -27,6 +27,14 @@ object PocketNodeState {
     private const val PREFS_NAME = "pocket_node_prefs"
     private const val KEY_CHAT_MODEL = "preferred_chat_model"
     private const val KEY_AUDIO_MODEL = "preferred_audio_model"
+    private const val KEY_API_KEY = "api_key"
+    private const val KEY_CORS_ENABLED = "cors_enabled"
+
+    /** Bearer token required by the HTTP API. Empty disables authentication. */
+    var apiKey: String = ""
+
+    /** Whether browsers on other origins may call the API (CORS). */
+    var corsEnabled: Boolean = true
 
     fun syncSharedModels() {
         if (activeChatModel != null && activeAudioModel != null && activeChatModel?.name == activeAudioModel?.name) {
@@ -42,6 +50,8 @@ object PocketNodeState {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         preferredChatModelName = prefs.getString(KEY_CHAT_MODEL, "") ?: ""
         preferredAudioModelName = prefs.getString(KEY_AUDIO_MODEL, "") ?: ""
+        apiKey = prefs.getString(KEY_API_KEY, "") ?: ""
+        corsEnabled = prefs.getBoolean(KEY_CORS_ENABLED, true)
     }
 
     fun savePreferences(context: Context, chatModelName: String, audioModelName: String) {
@@ -53,6 +63,14 @@ object PocketNodeState {
             .putString(KEY_AUDIO_MODEL, audioModelName)
             .apply()
     }
+
+    fun saveSecurityPreferences(context: Context, newApiKey: String, newCorsEnabled: Boolean) {
+        apiKey = newApiKey.trim()
+        corsEnabled = newCorsEnabled
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_API_KEY, apiKey)
+            .putBoolean(KEY_CORS_ENABLED, corsEnabled)
+            .apply()
+    }
 }
-
-

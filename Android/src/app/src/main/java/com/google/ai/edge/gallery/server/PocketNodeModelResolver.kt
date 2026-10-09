@@ -36,11 +36,10 @@ object PocketNodeModelResolver {
     fun findModelByNameOrId(context: Context, query: String): Model? {
         if (query.isBlank()) return null
         val models = getAllModels(context)
+        // Exact matches first, so "Qwen3.5-4B" never resolves to a model whose name it merely contains.
         return models.find { m ->
-            m.name.equals(query, ignoreCase = true) ||
-            m.downloadFileName.equals(query, ignoreCase = true) ||
-            query.contains(m.name, ignoreCase = true)
-        }
+            m.name.equals(query, ignoreCase = true) || m.downloadFileName.equals(query, ignoreCase = true)
+        } ?: models.filter { m -> query.contains(m.name, ignoreCase = true) }.maxByOrNull { it.name.length }
     }
 
     private fun readAllowlist(context: Context): ModelAllowlist? {
