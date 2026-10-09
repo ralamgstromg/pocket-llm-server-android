@@ -1,0 +1,2126 @@
+{
+  "Android/src/app/build.gradle.kts": {
+    "mtime": 1791404722.4036558,
+    "seen": 1791578701.0843313,
+    "ast_hash": "84928ee1f9107b7f46b5f7add056cc48",
+    "semantic_hash": "84928ee1f9107b7f46b5f7add056cc48"
+  },
+  "Android/src/app/src/main/assets/model_allowlists/1_0_11.json": {
+    "mtime": 1791404722.4037266,
+    "seen": 1791578701.084335,
+    "ast_hash": "f0e17a110f1f63a5c70e87c12dad2ffb",
+    "semantic_hash": "f0e17a110f1f63a5c70e87c12dad2ffb"
+  },
+  "Android/src/app/src/main/assets/skills/calculate-hash/scripts/index.js": {
+    "mtime": 1791404722.403832,
+    "seen": 1791578701.0843363,
+    "ast_hash": "1cc99c0f90c2d8fb0664abcfeb4469ea",
+    "semantic_hash": "1cc99c0f90c2d8fb0664abcfeb4469ea"
+  },
+  "Android/src/app/src/main/assets/tinygarden/main-K5DSW5YL.js": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0843372,
+    "ast_hash": "82d3dab0142613ffbb4ff180e50887aa",
+    "semantic_hash": "82d3dab0142613ffbb4ff180e50887aa"
+  },
+  "Android/src/app/src/main/bundle_config.pb.json": {
+    "mtime": 1791404722.4049606,
+    "seen": 1791578701.0843377,
+    "ast_hash": "010f49c9c7c9323febe8453c1fd85751",
+    "semantic_hash": "010f49c9c7c9323febe8453c1fd85751"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/Analytics.kt": {
+    "mtime": 1791404722.4057734,
+    "seen": 1791578701.0843384,
+    "ast_hash": "fdb19ea11f930aedf5ddaaf0450ce090",
+    "semantic_hash": "fdb19ea11f930aedf5ddaaf0450ce090"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/BenchmarkResultsSerializer.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.084339,
+    "ast_hash": "95460805ab6e750e66424f8603490cc3",
+    "semantic_hash": "95460805ab6e750e66424f8603490cc3"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/CutoutsSerializer.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843394,
+    "ast_hash": "79105bea8b419fdb72f5d0c22ed31397",
+    "semantic_hash": "79105bea8b419fdb72f5d0c22ed31397"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/FcmMessagingService.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843399,
+    "ast_hash": "3b57a59d74091b09f2a8704b59bc465d",
+    "semantic_hash": "3b57a59d74091b09f2a8704b59bc465d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/GalleryApp.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843403,
+    "ast_hash": "ed1056700b4dcda59eb48b5713dde73f",
+    "semantic_hash": "ed1056700b4dcda59eb48b5713dde73f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/GalleryAppTopBar.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843408,
+    "ast_hash": "11b2f3cc534617f6bb39f87525be1710",
+    "semantic_hash": "11b2f3cc534617f6bb39f87525be1710"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/GalleryApplication.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843415,
+    "ast_hash": "5fbb63359fdbe72b7d9a728d7a5dc9ce",
+    "semantic_hash": "5fbb63359fdbe72b7d9a728d7a5dc9ce"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/GalleryLifecycleProvider.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.084342,
+    "ast_hash": "3de109c92bc4ad3838adcf4588001a7d",
+    "semantic_hash": "3de109c92bc4ad3838adcf4588001a7d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/MainActivity.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843422,
+    "ast_hash": "15e26a443e9d04b342706e349c2c72cb",
+    "semantic_hash": "15e26a443e9d04b342706e349c2c72cb"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/SettingsSerializer.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843427,
+    "ast_hash": "072cf1d3023080b1cca659b6c8ff66e5",
+    "semantic_hash": "072cf1d3023080b1cca659b6c8ff66e5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/SkillsSerializer.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843432,
+    "ast_hash": "be675c40dc4fd259efab9a5e1afa32de",
+    "semantic_hash": "be675c40dc4fd259efab9a5e1afa32de"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/UserDataSerializer.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843434,
+    "ast_hash": "cf122f2777e4f3427a61e86054634039",
+    "semantic_hash": "cf122f2777e4f3427a61e86054634039"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/common/ProjectConfig.kt": {
+    "mtime": 1791404722.4058042,
+    "seen": 1791578701.0843441,
+    "ast_hash": "edf6feacd5ecaefbd82a625f1a3da72c",
+    "semantic_hash": "edf6feacd5ecaefbd82a625f1a3da72c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/common/Types.kt": {
+    "mtime": 1791404722.4060407,
+    "seen": 1791578701.0843446,
+    "ast_hash": "9f936866a0ed10eea19187f96e455ca5",
+    "semantic_hash": "9f936866a0ed10eea19187f96e455ca5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/common/Utils.kt": {
+    "mtime": 1791404722.4060407,
+    "seen": 1791578701.084345,
+    "ast_hash": "ebdbfde0853b3b67dab76e396fc9f137",
+    "semantic_hash": "ebdbfde0853b3b67dab76e396fc9f137"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AddOrEditSkillBottomSheet.kt": {
+    "mtime": 1791404722.4061215,
+    "seen": 1791578701.0843453,
+    "ast_hash": "60c34c81d312b961cb86ec2ce1fbd255",
+    "semantic_hash": "60c34c81d312b961cb86ec2ce1fbd255"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AddSkillDisclaimerDialog.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843458,
+    "ast_hash": "3be150e982e7486936423d43f3529d88",
+    "semantic_hash": "3be150e982e7486936423d43f3529d88"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AddSkillFromFeaturedListBottomSheet.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843465,
+    "ast_hash": "31f51fe2beb8a89c7658ab1c0750f678",
+    "semantic_hash": "31f51fe2beb8a89c7658ab1c0750f678"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AddSkillFromLocalImportDialog.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843472,
+    "ast_hash": "40d7f780bf08c0584b139a6c120c6b94",
+    "semantic_hash": "40d7f780bf08c0584b139a6c120c6b94"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AddSkillFromUrlDialog.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843475,
+    "ast_hash": "6d745eca760c894898225cd5218d7e2e",
+    "semantic_hash": "6d745eca760c894898225cd5218d7e2e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AgentChatScreen.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.084348,
+    "ast_hash": "3e34484ff051375e58360b0d40fcab2a",
+    "semantic_hash": "3e34484ff051375e58360b0d40fcab2a"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AgentChatTaskModule.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843484,
+    "ast_hash": "53c97eb844ee59322b0136d7488779e9",
+    "semantic_hash": "53c97eb844ee59322b0136d7488779e9"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/AgentTools.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.084349,
+    "ast_hash": "70f706070aedd166754c0abee8b45332",
+    "semantic_hash": "70f706070aedd166754c0abee8b45332"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/CursorTrackingTextField.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843494,
+    "ast_hash": "29a990649473d641348f94b50f4ab44d",
+    "semantic_hash": "29a990649473d641348f94b50f4ab44d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/GenerateLlmPromptBottomSheet.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843499,
+    "ast_hash": "2f8cd02dd1a8d10345f7d648669a1d71",
+    "semantic_hash": "2f8cd02dd1a8d10345f7d648669a1d71"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/IntentHandler.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.08435,
+    "ast_hash": "1abd1c828b89f9694943b408b3621a05",
+    "semantic_hash": "1abd1c828b89f9694943b408b3621a05"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/SecretEditorDialog.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843554,
+    "ast_hash": "9f4154166cb46dc22f4c3b8c9d8adc81",
+    "semantic_hash": "9f4154166cb46dc22f4c3b8c9d8adc81"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/SkillManagerBottomSheet.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843556,
+    "ast_hash": "c518f1b10cb95b2da932d1b583f5592d",
+    "semantic_hash": "c518f1b10cb95b2da932d1b583f5592d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/SkillManagerViewModel.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.084356,
+    "ast_hash": "5b76cff3fc77a7936a6a471c4b6df322",
+    "semantic_hash": "5b76cff3fc77a7936a6a471c4b6df322"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/agentchat/SkillTesterBottomSheet.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843563,
+    "ast_hash": "8aed7915aba187824f8e91fef9763a3a",
+    "semantic_hash": "8aed7915aba187824f8e91fef9763a3a"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/common/CustomTask.kt": {
+    "mtime": 1791404722.406231,
+    "seen": 1791578701.0843565,
+    "ast_hash": "647a764c9f0134a241465f9ded266041",
+    "semantic_hash": "647a764c9f0134a241465f9ded266041"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/common/CustomTaskData.kt": {
+    "mtime": 1791404722.4067488,
+    "seen": 1791578701.084357,
+    "ast_hash": "923956b56606cda970cfd4737294f111",
+    "semantic_hash": "923956b56606cda970cfd4737294f111"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/examplecustomtask/ExampleCustomTask.kt": {
+    "mtime": 1791404722.4067488,
+    "seen": 1791578701.0843577,
+    "ast_hash": "b574a69bd21ac174538c266258734c9b",
+    "semantic_hash": "b574a69bd21ac174538c266258734c9b"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/examplecustomtask/ExampleCustomTaskModule.kt": {
+    "mtime": 1791404722.4067905,
+    "seen": 1791578701.084358,
+    "ast_hash": "036633c43c9d4398bda91422002bac1e",
+    "semantic_hash": "036633c43c9d4398bda91422002bac1e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/examplecustomtask/ExampleCustomTaskScreen.kt": {
+    "mtime": 1791404722.4067905,
+    "seen": 1791578701.0843585,
+    "ast_hash": "a0a57d604a60f9d728c041cb0d669217",
+    "semantic_hash": "a0a57d604a60f9d728c041cb0d669217"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/examplecustomtask/ExampleCustomTaskViewModel.kt": {
+    "mtime": 1791404722.4067905,
+    "seen": 1791578701.0843587,
+    "ast_hash": "1f2688f05e9908a5a0df98828ada60d2",
+    "semantic_hash": "1f2688f05e9908a5a0df98828ada60d2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/Actions.kt": {
+    "mtime": 1791404722.4067905,
+    "seen": 1791578701.0843592,
+    "ast_hash": "9bf95ff91df6584bea19880e819715f9",
+    "semantic_hash": "9bf95ff91df6584bea19880e819715f9"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/MobileActionsModule.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.0843594,
+    "ast_hash": "6211e71e7dbcc569397dc9f1d16f7034",
+    "semantic_hash": "6211e71e7dbcc569397dc9f1d16f7034"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/MobileActionsScreen.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.0843601,
+    "ast_hash": "f930aa2bf3303d7a93fe0079c66eae16",
+    "semantic_hash": "f930aa2bf3303d7a93fe0079c66eae16"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/MobileActionsTask.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.0843606,
+    "ast_hash": "1f2bad7148b53c81694d341970b45ce1",
+    "semantic_hash": "1f2bad7148b53c81694d341970b45ce1"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/MobileActionsTools.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.0843613,
+    "ast_hash": "c2e4e73c9fc72b72256bb6f2d82dc6b7",
+    "semantic_hash": "c2e4e73c9fc72b72256bb6f2d82dc6b7"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions/MobileActionsViewModel.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.0843616,
+    "ast_hash": "902fde6d6064be9515cdb2e094a710a2",
+    "semantic_hash": "902fde6d6064be9515cdb2e094a710a2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/ConversationHistoryPanel.kt": {
+    "mtime": 1791404722.4069903,
+    "seen": 1791578701.084362,
+    "ast_hash": "778c6d8dbbed3c61da2bed95f829888f",
+    "semantic_hash": "778c6d8dbbed3c61da2bed95f829888f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/TinyGardenScreen.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.0843623,
+    "ast_hash": "0d1e51b575cf8b911af7abb0a2ea7514",
+    "semantic_hash": "0d1e51b575cf8b911af7abb0a2ea7514"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/TinyGardenTask.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.0843627,
+    "ast_hash": "a96c4bf4bbaa4746238d33ec5acf884e",
+    "semantic_hash": "a96c4bf4bbaa4746238d33ec5acf884e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/TinyGardenTaskModule.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.084363,
+    "ast_hash": "bc5a6b4da98bceaf569c8ccb5024a984",
+    "semantic_hash": "bc5a6b4da98bceaf569c8ccb5024a984"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/TinyGardenTools.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.0843635,
+    "ast_hash": "159dda46d3f9b8d8277438102fb81f15",
+    "semantic_hash": "159dda46d3f9b8d8277438102fb81f15"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/tinygarden/TinyGardenViewModel.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.0843637,
+    "ast_hash": "6634c5937daab1acf7cda01e2b9bc16d",
+    "semantic_hash": "6634c5937daab1acf7cda01e2b9bc16d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/AppBarAction.kt": {
+    "mtime": 1791404722.4071808,
+    "seen": 1791578701.0843642,
+    "ast_hash": "491cce5f08c7a6d806cd11751d13b8bf",
+    "semantic_hash": "491cce5f08c7a6d806cd11751d13b8bf"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Categories.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843647,
+    "ast_hash": "b909380945359743a45f2d12477022de",
+    "semantic_hash": "b909380945359743a45f2d12477022de"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Config.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.084365,
+    "ast_hash": "9d41d9fd77e2eae3f813051d84059755",
+    "semantic_hash": "9d41d9fd77e2eae3f813051d84059755"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/ConfigValue.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843654,
+    "ast_hash": "e30ccc10ba16b25bba0a2447dfeac374",
+    "semantic_hash": "e30ccc10ba16b25bba0a2447dfeac374"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Consts.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843658,
+    "ast_hash": "673495e71d07a2a5a13eefde92a0f191",
+    "semantic_hash": "673495e71d07a2a5a13eefde92a0f191"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/DataStoreRepository.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.084366,
+    "ast_hash": "93b101ad0bea13046f8e6d0005b53650",
+    "semantic_hash": "93b101ad0bea13046f8e6d0005b53650"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/DownloadRepository.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843666,
+    "ast_hash": "be4c29e41dd92d85d0a79402ad3d02f5",
+    "semantic_hash": "be4c29e41dd92d85d0a79402ad3d02f5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Model.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.084367,
+    "ast_hash": "d5e4b07f8e897de28ece2659b3e8e243",
+    "semantic_hash": "d5e4b07f8e897de28ece2659b3e8e243"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/ModelAllowlist.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843673,
+    "ast_hash": "fcecaba21e4ffdd2be838826ad3f6d65",
+    "semantic_hash": "fcecaba21e4ffdd2be838826ad3f6d65"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/SkillAllowlist.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.084368,
+    "ast_hash": "769a5db9200e7d7bdf588b2993a84df2",
+    "semantic_hash": "769a5db9200e7d7bdf588b2993a84df2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Tasks.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843685,
+    "ast_hash": "fe7a28db6eb012c2362d079e8b603cae",
+    "semantic_hash": "fe7a28db6eb012c2362d079e8b603cae"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/data/Types.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843687,
+    "ast_hash": "6a4950e6c22ab4d0186537d15a4d39d8",
+    "semantic_hash": "6a4950e6c22ab4d0186537d15a4d39d8"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/di/AppModule.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843692,
+    "ast_hash": "f1ff34e01f7d396a74a9249062c9b4ab",
+    "semantic_hash": "f1ff34e01f7d396a74a9249062c9b4ab"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/runtime/LlmModelHelper.kt": {
+    "mtime": 1791404722.4073672,
+    "seen": 1791578701.0843697,
+    "ast_hash": "c23833b0cc506c419b2891ac50800520",
+    "semantic_hash": "c23833b0cc506c419b2891ac50800520"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/runtime/ModelHelperExt.kt": {
+    "mtime": 1791404722.4077613,
+    "seen": 1791578701.08437,
+    "ast_hash": "16e806c8a3130d1a500de24b35103089",
+    "semantic_hash": "16e806c8a3130d1a500de24b35103089"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/AudioDecoderHelper.kt": {
+    "mtime": 1791404722.4077613,
+    "seen": 1791578701.0843704,
+    "ast_hash": "0d869201892cd3a66919eceed40ec46b",
+    "semantic_hash": "0d869201892cd3a66919eceed40ec46b"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/PocketNodeModelResolver.kt": {
+    "mtime": 1791404722.4078236,
+    "seen": 1791578701.0843709,
+    "ast_hash": "215fcb828a2b4428cde128e3513d4587",
+    "semantic_hash": "215fcb828a2b4428cde128e3513d4587"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/PocketNodeServer.kt": {
+    "mtime": 1791404722.4078236,
+    "seen": 1791578701.0843716,
+    "ast_hash": "68ff95933bc5a839664c3402f6929132",
+    "semantic_hash": "68ff95933bc5a839664c3402f6929132"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/PocketNodeServerDialog.kt": {
+    "mtime": 1791404722.4078236,
+    "seen": 1791578701.084372,
+    "ast_hash": "6cc724134fc1ed858c708c5036bcb16f",
+    "semantic_hash": "6cc724134fc1ed858c708c5036bcb16f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/PocketNodeService.kt": {
+    "mtime": 1791404722.4078236,
+    "seen": 1791578701.0843725,
+    "ast_hash": "08dd03bd64ef2759d78f4eeae43a1926",
+    "semantic_hash": "08dd03bd64ef2759d78f4eeae43a1926"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/server/PocketNodeState.kt": {
+    "mtime": 1791404722.4078236,
+    "seen": 1791578701.0843728,
+    "ast_hash": "219edda2d984755fc25ac15ff246dd08",
+    "semantic_hash": "219edda2d984755fc25ac15ff246dd08"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/benchmark/BenchmarkModelPicker.kt": {
+    "mtime": 1791404722.4079957,
+    "seen": 1791578701.0843732,
+    "ast_hash": "0ba2384b4f23113e15188682fbe49db5",
+    "semantic_hash": "0ba2384b4f23113e15188682fbe49db5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/benchmark/BenchmarkResultsViewer.kt": {
+    "mtime": 1791404722.4080384,
+    "seen": 1791578701.0843737,
+    "ast_hash": "3e797ddf326586b8ce686913ac15af58",
+    "semantic_hash": "3e797ddf326586b8ce686913ac15af58"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/benchmark/BenchmarkScreen.kt": {
+    "mtime": 1791404722.4080384,
+    "seen": 1791578701.0843742,
+    "ast_hash": "142cfd3d159eb89c62ff57f1ba2d6a53",
+    "semantic_hash": "142cfd3d159eb89c62ff57f1ba2d6a53"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/benchmark/BenchmarkValueSeriesViewer.kt": {
+    "mtime": 1791404722.4080384,
+    "seen": 1791578701.0843744,
+    "ast_hash": "de3eece7375adfc9f68d733a1cb721dc",
+    "semantic_hash": "de3eece7375adfc9f68d733a1cb721dc"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/benchmark/BenchmarkViewModel.kt": {
+    "mtime": 1791404722.4080384,
+    "seen": 1791578701.0843751,
+    "ast_hash": "b5ed59695ae5e5e09f8c6bed4a446589",
+    "semantic_hash": "b5ed59695ae5e5e09f8c6bed4a446589"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/Accordions.kt": {
+    "mtime": 1791404722.4080384,
+    "seen": 1791578701.0843756,
+    "ast_hash": "c238ed527a72addd3bcc8e1b0e506fad",
+    "semantic_hash": "c238ed527a72addd3bcc8e1b0e506fad"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/AudioAnimation.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.084376,
+    "ast_hash": "8ddbfd345522eb1bd72807f7f1841563",
+    "semantic_hash": "8ddbfd345522eb1bd72807f7f1841563"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ClickableLink.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843763,
+    "ast_hash": "c83c485bb0e87c8a1fa645a7a3744068",
+    "semantic_hash": "c83c485bb0e87c8a1fa645a7a3744068"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ColorUtils.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843768,
+    "ast_hash": "24aa300caa969cc11e94bda515c20dba",
+    "semantic_hash": "24aa300caa969cc11e94bda515c20dba"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ConfigDialog.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843773,
+    "ast_hash": "a6377ffe2f5f2682c9e82dc7b31f2484",
+    "semantic_hash": "a6377ffe2f5f2682c9e82dc7b31f2484"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/DownloadAndTryButton.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843775,
+    "ast_hash": "c6ab11337f0ed7386042e1e5a1377923",
+    "semantic_hash": "c6ab11337f0ed7386042e1e5a1377923"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/EmptyState.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.084378,
+    "ast_hash": "713b77d7e43c50c7fb1f86804ecd95d2",
+    "semantic_hash": "713b77d7e43c50c7fb1f86804ecd95d2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ErrorDialog.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.084379,
+    "ast_hash": "24a41706866b55a64d3201c2e79d77b0",
+    "semantic_hash": "24a41706866b55a64d3201c2e79d77b0"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/FloatingBanner.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843794,
+    "ast_hash": "2c09cdde9c3980121f0c46f8019954dd",
+    "semantic_hash": "2c09cdde9c3980121f0c46f8019954dd"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/GalleryWebView.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.08438,
+    "ast_hash": "23c2ace16b3c26a9f3576645337dbcfa",
+    "semantic_hash": "23c2ace16b3c26a9f3576645337dbcfa"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/GlitteringShapesLoader.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843801,
+    "ast_hash": "652a5baa8defeb320c455bba74efb5d8",
+    "semantic_hash": "652a5baa8defeb320c455bba74efb5d8"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/LiveCameraView.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843806,
+    "ast_hash": "719b591522e3d9d57fce72e63d6244d1",
+    "semantic_hash": "719b591522e3d9d57fce72e63d6244d1"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/MarkdownText.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843809,
+    "ast_hash": "11575c9fabd6812c462f4990530b7520",
+    "semantic_hash": "11575c9fabd6812c462f4990530b7520"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/MemoryWarning.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843813,
+    "ast_hash": "4d33ce63793756300380576476da4f18",
+    "semantic_hash": "4d33ce63793756300380576476da4f18"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ModelPageAppBar.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843816,
+    "ast_hash": "31d1d2b4c72106a10e633cbc55492b3b",
+    "semantic_hash": "31d1d2b4c72106a10e633cbc55492b3b"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ModelPicker.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843823,
+    "ast_hash": "5f76f355655186d4de5136046dceced0",
+    "semantic_hash": "5f76f355655186d4de5136046dceced0"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/ModelPickerChip.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843825,
+    "ast_hash": "b2170bd60b14dc5c413d2bc59c41309f",
+    "semantic_hash": "b2170bd60b14dc5c413d2bc59c41309f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/RotationalLoader.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.084383,
+    "ast_hash": "b462ab8478a7e895255360238ffbfe39",
+    "semantic_hash": "b462ab8478a7e895255360238ffbfe39"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/TaskIcon.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843835,
+    "ast_hash": "53331564ebb0ad1428e9fd99a328d189",
+    "semantic_hash": "53331564ebb0ad1428e9fd99a328d189"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/Utils.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.084384,
+    "ast_hash": "d0b36ffd0ebf707de82e59bc07ce77c7",
+    "semantic_hash": "d0b36ffd0ebf707de82e59bc07ce77c7"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/AudioPlaybackPanel.kt": {
+    "mtime": 1791404722.4082334,
+    "seen": 1791578701.0843842,
+    "ast_hash": "965a83fd1a5f34b4d83ccd5312fba9d9",
+    "semantic_hash": "965a83fd1a5f34b4d83ccd5312fba9d9"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/AudioRecorderPanel.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843847,
+    "ast_hash": "cd4207bfe234d5abe40202a3b3c56c42",
+    "semantic_hash": "cd4207bfe234d5abe40202a3b3c56c42"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/BenchmarkConfigDialog.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084385,
+    "ast_hash": "9dbd6dd77a4fd4a4bfe7396e2d08052f",
+    "semantic_hash": "9dbd6dd77a4fd4a4bfe7396e2d08052f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ChatMessage.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843856,
+    "ast_hash": "d011fd0ebed90c55cdffa3d69c42f488",
+    "semantic_hash": "d011fd0ebed90c55cdffa3d69c42f488"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ChatPanel.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843859,
+    "ast_hash": "c23af19d979d7507f18023870b0c1e69",
+    "semantic_hash": "c23af19d979d7507f18023870b0c1e69"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ChatView.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843863,
+    "ast_hash": "7cd0cd6a67d8f3c5a30ea766cd09ea53",
+    "semantic_hash": "7cd0cd6a67d8f3c5a30ea766cd09ea53"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ChatViewModel.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843868,
+    "ast_hash": "74b2b9ad8eafdc9e8714088fcdc517ec",
+    "semantic_hash": "74b2b9ad8eafdc9e8714088fcdc517ec"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/DataCard.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843873,
+    "ast_hash": "c4c17cc3276b07c7e0272f00aa6f33fe",
+    "semantic_hash": "c4c17cc3276b07c7e0272f00aa6f33fe"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/LogsViewer.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843875,
+    "ast_hash": "e1819d42c8b6fb109897c7e1eb645fe5",
+    "semantic_hash": "e1819d42c8b6fb109897c7e1eb645fe5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageActionButton.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084388,
+    "ast_hash": "8aeb7a77892c7f033bf266cb06efbe3f",
+    "semantic_hash": "8aeb7a77892c7f033bf266cb06efbe3f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyAudioClip.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843883,
+    "ast_hash": "27152591a83a79084dc01e1e9af61e5e",
+    "semantic_hash": "27152591a83a79084dc01e1e9af61e5e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyBenchmark.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084389,
+    "ast_hash": "29f04cbd3d5dd4b6f546a881d1867d8c",
+    "semantic_hash": "29f04cbd3d5dd4b6f546a881d1867d8c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyBenchmarkLlm.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843894,
+    "ast_hash": "8e127a50e51b483824f1db61c70d95f2",
+    "semantic_hash": "8e127a50e51b483824f1db61c70d95f2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyClassification.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843897,
+    "ast_hash": "e1135c483508316e148b64a1e86ecbd8",
+    "semantic_hash": "e1135c483508316e148b64a1e86ecbd8"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyCollapsableProgressPanel.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843902,
+    "ast_hash": "809d84dfba0848a3ed52c8ccb648cf31",
+    "semantic_hash": "809d84dfba0848a3ed52c8ccb648cf31"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyConfigUpdate.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843904,
+    "ast_hash": "33265d4db9771c87edb2d2557cc5fb2c",
+    "semantic_hash": "33265d4db9771c87edb2d2557cc5fb2c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyError.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843909,
+    "ast_hash": "4aeef2d7a20144590b05e4e4f6e2034b",
+    "semantic_hash": "4aeef2d7a20144590b05e4e4f6e2034b"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyImage.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843914,
+    "ast_hash": "7f347048b67ba6ec4e073ba4513e95ed",
+    "semantic_hash": "7f347048b67ba6ec4e073ba4513e95ed"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyImageWithHistory.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843916,
+    "ast_hash": "1714a77805f5449b8a22425dc73b40c7",
+    "semantic_hash": "1714a77805f5449b8a22425dc73b40c7"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyInfo.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843923,
+    "ast_hash": "b5175047c38e4a1271ba879a1a022c0d",
+    "semantic_hash": "b5175047c38e4a1271ba879a1a022c0d"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyLoading.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843925,
+    "ast_hash": "65a4ca3e349c1a8c940855f7106b4497",
+    "semantic_hash": "65a4ca3e349c1a8c940855f7106b4497"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyPromptTemplates.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084393,
+    "ast_hash": "e3ee57a18a67ae2ab543fbea0ad28ba0",
+    "semantic_hash": "e3ee57a18a67ae2ab543fbea0ad28ba0"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyText.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843935,
+    "ast_hash": "317a6fbcd8367788393eb482536f0c0e",
+    "semantic_hash": "317a6fbcd8367788393eb482536f0c0e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyThinking.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084394,
+    "ast_hash": "79c9910a941c429dc513e8d2b9fee465",
+    "semantic_hash": "79c9910a941c429dc513e8d2b9fee465"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyWarning.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843942,
+    "ast_hash": "6a87698b30a47975250acb2b2aa5858a",
+    "semantic_hash": "6a87698b30a47975250acb2b2aa5858a"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBodyWebview.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843947,
+    "ast_hash": "b55e60ccb0bd4c653bc81a60328980dc",
+    "semantic_hash": "b55e60ccb0bd4c653bc81a60328980dc"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageBubbleShape.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084395,
+    "ast_hash": "395ea21eeea059028c59719c4bad5a0f",
+    "semantic_hash": "395ea21eeea059028c59719c4bad5a0f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageInputText.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843954,
+    "ast_hash": "7ddeb08f9aeda83439890ca93ca837c0",
+    "semantic_hash": "7ddeb08f9aeda83439890ca93ca837c0"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageLatency.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843961,
+    "ast_hash": "15ffe43fb5b24d7cff0a078c55419fe1",
+    "semantic_hash": "15ffe43fb5b24d7cff0a078c55419fe1"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/MessageSender.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843964,
+    "ast_hash": "eb85fb49ee0396a0a522406d8cb540f2",
+    "semantic_hash": "eb85fb49ee0396a0a522406d8cb540f2"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ModelDownloadStatusInfoPanel.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843968,
+    "ast_hash": "273c7a085265a828b73133409a264d48",
+    "semantic_hash": "273c7a085265a828b73133409a264d48"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ModelDownloadingAnimation.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084397,
+    "ast_hash": "632e32bfb67d8186bad40fb0e52c605a",
+    "semantic_hash": "632e32bfb67d8186bad40fb0e52c605a"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ModelInitializationStatus.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843976,
+    "ast_hash": "e660097194b2cb46ad8b1b5484c5b2ee",
+    "semantic_hash": "e660097194b2cb46ad8b1b5484c5b2ee"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ModelNotDownloaded.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843978,
+    "ast_hash": "692a238b71461501e5782f761c80370b",
+    "semantic_hash": "692a238b71461501e5782f761c80370b"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/TextInputHistorySheet.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843983,
+    "ast_hash": "3b2fd8ddd786becb8b80af59a611e306",
+    "semantic_hash": "3b2fd8ddd786becb8b80af59a611e306"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/chat/ZoomableImage.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.0843985,
+    "ast_hash": "d488861acd139a9855ff64158ad8a0ad",
+    "semantic_hash": "d488861acd139a9855ff64158ad8a0ad"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/ConfirmDeleteModelDialog.kt": {
+    "mtime": 1791404722.409186,
+    "seen": 1791578701.084399,
+    "ast_hash": "606238122954110a0d9fa3098b789ea4",
+    "semantic_hash": "606238122954110a0d9fa3098b789ea4"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/DeleteModelButton.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.0843995,
+    "ast_hash": "6495ee01e35964c29a2c35ae36a6a4e6",
+    "semantic_hash": "6495ee01e35964c29a2c35ae36a6a4e6"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/DownloadModelPanel.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.0844,
+    "ast_hash": "990e9ca0ee5062edfb20004e1ff321f4",
+    "semantic_hash": "990e9ca0ee5062edfb20004e1ff321f4"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/ModelItem.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.0844002,
+    "ast_hash": "ab15ff54e4965b080d942911d40ec9a6",
+    "semantic_hash": "ab15ff54e4965b080d942911d40ec9a6"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/ModelNameAndStatus.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.0844007,
+    "ast_hash": "258b7e8e47f291538ac9901ebb5dc851",
+    "semantic_hash": "258b7e8e47f291538ac9901ebb5dc851"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/modelitem/StatusIcon.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.084401,
+    "ast_hash": "2ff7dc274c0319036209d87a3832997f",
+    "semantic_hash": "2ff7dc274c0319036209d87a3832997f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/textandvoiceinput/HoldToDictate.kt": {
+    "mtime": 1791404722.410303,
+    "seen": 1791578701.0844014,
+    "ast_hash": "5b5779695aaa4185aa4c310c21b83a7e",
+    "semantic_hash": "5b5779695aaa4185aa4c310c21b83a7e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/textandvoiceinput/HoldToDictateViewModel.kt": {
+    "mtime": 1791404722.4105074,
+    "seen": 1791578701.0844016,
+    "ast_hash": "aee254a10b0e2de8f4399d490fbd3cac",
+    "semantic_hash": "aee254a10b0e2de8f4399d490fbd3cac"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/textandvoiceinput/TextAndVoiceInput.kt": {
+    "mtime": 1791404722.4105074,
+    "seen": 1791578701.084402,
+    "ast_hash": "45da0ae7eae8d43b48bca12c1ee7bfda",
+    "semantic_hash": "45da0ae7eae8d43b48bca12c1ee7bfda"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/textandvoiceinput/VoiceRecognizerOverlay.kt": {
+    "mtime": 1791404722.4105074,
+    "seen": 1791578701.0844023,
+    "ast_hash": "4628c449c7edbf04d3d17ab27781c0c4",
+    "semantic_hash": "4628c449c7edbf04d3d17ab27781c0c4"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/tos/AppTosDialog.kt": {
+    "mtime": 1791404722.4105074,
+    "seen": 1791578701.084403,
+    "ast_hash": "8fff617e3e3592e5fdab5c2f1f51938e",
+    "semantic_hash": "8fff617e3e3592e5fdab5c2f1f51938e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/tos/GemmaTermsOfUseDialog.kt": {
+    "mtime": 1791404722.4106371,
+    "seen": 1791578701.0844033,
+    "ast_hash": "7f40f326cceac5f2d38ca2408297c1d7",
+    "semantic_hash": "7f40f326cceac5f2d38ca2408297c1d7"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/common/tos/TosViewModel.kt": {
+    "mtime": 1791404722.4106371,
+    "seen": 1791578701.0844038,
+    "ast_hash": "44b455b2df01c48854d3668cc92d92b0",
+    "semantic_hash": "44b455b2df01c48854d3668cc92d92b0"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/HomeScreen.kt": {
+    "mtime": 1791404722.4106371,
+    "seen": 1791578701.084404,
+    "ast_hash": "bd2076e402c4b7ed77aba17fb5d0cc52",
+    "semantic_hash": "bd2076e402c4b7ed77aba17fb5d0cc52"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/MobileActionsChallengeDialog.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.0844045,
+    "ast_hash": "a476f6315dc7dd2178cc1834561aefe9",
+    "semantic_hash": "a476f6315dc7dd2178cc1834561aefe9"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/NewReleaseNotification.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.084405,
+    "ast_hash": "b01171897e08f8b80e25f26dc8e8c1fd",
+    "semantic_hash": "b01171897e08f8b80e25f26dc8e8c1fd"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/PromoScreenGm4.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.0844052,
+    "ast_hash": "3ead67370607b72221a00733e4838bc4",
+    "semantic_hash": "3ead67370607b72221a00733e4838bc4"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/SettingsDialog.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.0844057,
+    "ast_hash": "71c3dcc9996483deacf8f23e32f7c978",
+    "semantic_hash": "71c3dcc9996483deacf8f23e32f7c978"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/home/SquareDrawerItem.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.084406,
+    "ast_hash": "b1abdb7401a01cecc86e4a3406f86014",
+    "semantic_hash": "b1abdb7401a01cecc86e4a3406f86014"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/icon/Deploy.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.0844066,
+    "ast_hash": "c4c7362595d5fbb40f93e946b7069f86",
+    "semantic_hash": "c4c7362595d5fbb40f93e946b7069f86"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmchat/LlmChatModelHelper.kt": {
+    "mtime": 1791404722.4107666,
+    "seen": 1791578701.084407,
+    "ast_hash": "73249b961279704c43ddb5d2c100ee9c",
+    "semantic_hash": "73249b961279704c43ddb5d2c100ee9c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmchat/LlmChatScreen.kt": {
+    "mtime": 1791404722.4109929,
+    "seen": 1791578701.0844076,
+    "ast_hash": "c56d05160db9019bcacf76efec2cae6f",
+    "semantic_hash": "c56d05160db9019bcacf76efec2cae6f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmchat/LlmChatTaskModule.kt": {
+    "mtime": 1791404722.4109929,
+    "seen": 1791578701.084408,
+    "ast_hash": "70c698c8d97edf3f0365c024be307857",
+    "semantic_hash": "70c698c8d97edf3f0365c024be307857"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmchat/LlmChatViewModel.kt": {
+    "mtime": 1791404722.4109929,
+    "seen": 1791578701.0844083,
+    "ast_hash": "bab27a2d47d303d2951574162feecad5",
+    "semantic_hash": "bab27a2d47d303d2951574162feecad5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/LlmSingleTurnScreen.kt": {
+    "mtime": 1791404722.4109929,
+    "seen": 1791578701.0844088,
+    "ast_hash": "fe3ed135841ab1e0c9ebbc67814f4c21",
+    "semantic_hash": "fe3ed135841ab1e0c9ebbc67814f4c21"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/LlmSingleTurnTaskModule.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844092,
+    "ast_hash": "c0dfbab1e39dbcfa7000808086f76f69",
+    "semantic_hash": "c0dfbab1e39dbcfa7000808086f76f69"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/LlmSingleTurnViewModel.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844097,
+    "ast_hash": "07b98b90693abbe13778a1241591eaad",
+    "semantic_hash": "07b98b90693abbe13778a1241591eaad"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/PromptTemplateConfigs.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844102,
+    "ast_hash": "97b3e6f49c9040b8317fc332cc2f3685",
+    "semantic_hash": "97b3e6f49c9040b8317fc332cc2f3685"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/PromptTemplatesPanel.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844107,
+    "ast_hash": "77b428cdc0f23651a4c06e273fe2e229",
+    "semantic_hash": "77b428cdc0f23651a4c06e273fe2e229"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/ResponsePanel.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.084411,
+    "ast_hash": "f3908325bfd347b7df9e39338de98244",
+    "semantic_hash": "f3908325bfd347b7df9e39338de98244"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/SingleSelectButton.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844114,
+    "ast_hash": "f8e59fd253a9e82f137974bcc1394b99",
+    "semantic_hash": "f8e59fd253a9e82f137974bcc1394b99"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/llmsingleturn/VerticalSplitView.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.0844119,
+    "ast_hash": "1b046d92aa1265672a280e50d547636e",
+    "semantic_hash": "1b046d92aa1265672a280e50d547636e"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/GlobalModelManager.kt": {
+    "mtime": 1791404722.4111972,
+    "seen": 1791578701.084412,
+    "ast_hash": "a95703ea10c0c97b60abd843a5ab9246",
+    "semantic_hash": "a95703ea10c0c97b60abd843a5ab9246"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/ModelImportDialog.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844126,
+    "ast_hash": "491ccbd28af418551b1c80c51f47042f",
+    "semantic_hash": "491ccbd28af418551b1c80c51f47042f"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/ModelList.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844128,
+    "ast_hash": "ee6ce72e18da6ca563d7c53e70981709",
+    "semantic_hash": "ee6ce72e18da6ca563d7c53e70981709"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/ModelManager.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844135,
+    "ast_hash": "043a92728c82d1e0088d0e2c7d3d541c",
+    "semantic_hash": "043a92728c82d1e0088d0e2c7d3d541c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/ModelManagerViewModel.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844142,
+    "ast_hash": "14738b725169e6abaf8f0bb1baf9af40",
+    "semantic_hash": "14738b725169e6abaf8f0bb1baf9af40"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/modelmanager/PromoBannerGm4.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844147,
+    "ast_hash": "2a373c29f2c04fdb4ddcb8fdc194208c",
+    "semantic_hash": "2a373c29f2c04fdb4ddcb8fdc194208c"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/navigation/GalleryNavGraph.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844152,
+    "ast_hash": "179ca66fe979518accd58b70ac8d9532",
+    "semantic_hash": "179ca66fe979518accd58b70ac8d9532"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/theme/Color.kt": {
+    "mtime": 1791404722.4114509,
+    "seen": 1791578701.0844154,
+    "ast_hash": "963b42c4cf39f63cfed37dc97185dfc1",
+    "semantic_hash": "963b42c4cf39f63cfed37dc97185dfc1"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/theme/Theme.kt": {
+    "mtime": 1791404722.4116569,
+    "seen": 1791578701.084416,
+    "ast_hash": "5f0842bde06824e62e98e764702b6fa5",
+    "semantic_hash": "5f0842bde06824e62e98e764702b6fa5"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/theme/ThemeSettings.kt": {
+    "mtime": 1791404722.4116569,
+    "seen": 1791578701.0844162,
+    "ast_hash": "5f72543375d37c9efb90a7e356fdc7ea",
+    "semantic_hash": "5f72543375d37c9efb90a7e356fdc7ea"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/ui/theme/Type.kt": {
+    "mtime": 1791404722.4116569,
+    "seen": 1791578701.0844169,
+    "ast_hash": "b8bf80235f8ee21f839b2d60e8525299",
+    "semantic_hash": "b8bf80235f8ee21f839b2d60e8525299"
+  },
+  "Android/src/app/src/main/java/com/google/ai/edge/gallery/worker/DownloadWorker.kt": {
+    "mtime": 1791404722.4117799,
+    "seen": 1791578701.084417,
+    "ast_hash": "a74eb2152fdb89155dca7749d4634120",
+    "semantic_hash": "a74eb2152fdb89155dca7749d4634120"
+  },
+  "Android/src/build.gradle.kts": {
+    "mtime": 1791404722.4153767,
+    "seen": 1791578701.0844176,
+    "ast_hash": "59c56c761ae4603c77908c44760d00c2",
+    "semantic_hash": "59c56c761ae4603c77908c44760d00c2"
+  },
+  "Android/src/gradlew": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844178,
+    "ast_hash": "02c16663c6f0aa37f98d94d698c22b8c",
+    "semantic_hash": "02c16663c6f0aa37f98d94d698c22b8c"
+  },
+  "Android/src/settings.gradle.kts": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844183,
+    "ast_hash": "77b14461714cf0dbf98959f36ddfa890",
+    "semantic_hash": "77b14461714cf0dbf98959f36ddfa890"
+  },
+  "model_allowlist.json": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844185,
+    "ast_hash": "06c54e15b0dbdf17afd2bb8ccddad6ba",
+    "semantic_hash": "06c54e15b0dbdf17afd2bb8ccddad6ba"
+  },
+  "model_allowlists/1_0_10.json": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.084419,
+    "ast_hash": "9e872742b193b06167a06063f3a348ff",
+    "semantic_hash": "9e872742b193b06167a06063f3a348ff"
+  },
+  "model_allowlists/1_0_11.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844195,
+    "ast_hash": "f0e17a110f1f63a5c70e87c12dad2ffb",
+    "semantic_hash": "f0e17a110f1f63a5c70e87c12dad2ffb"
+  },
+  "model_allowlists/1_0_4.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844197,
+    "ast_hash": "6e8467bbc738ae8395a1e6a5426d951a",
+    "semantic_hash": "6e8467bbc738ae8395a1e6a5426d951a"
+  },
+  "model_allowlists/1_0_5.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844204,
+    "ast_hash": "6e8467bbc738ae8395a1e6a5426d951a",
+    "semantic_hash": "6e8467bbc738ae8395a1e6a5426d951a"
+  },
+  "model_allowlists/1_0_6.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844243,
+    "ast_hash": "6e8467bbc738ae8395a1e6a5426d951a",
+    "semantic_hash": "6e8467bbc738ae8395a1e6a5426d951a"
+  },
+  "model_allowlists/1_0_7.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844245,
+    "ast_hash": "9f5bdc0568f4b2f8d8aa1b16ec5cec83",
+    "semantic_hash": "9f5bdc0568f4b2f8d8aa1b16ec5cec83"
+  },
+  "model_allowlists/1_0_8.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.084425,
+    "ast_hash": "05264194788cfddc99f55eecd35d0352",
+    "semantic_hash": "05264194788cfddc99f55eecd35d0352"
+  },
+  "model_allowlists/1_0_9.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844254,
+    "ast_hash": "e54b561c1c4f290850703c9589585a24",
+    "semantic_hash": "e54b561c1c4f290850703c9589585a24"
+  },
+  "model_allowlists/ios_1_0_0.json": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844257,
+    "ast_hash": "426794cd1de83cd0736b04f37106e4fd",
+    "semantic_hash": "426794cd1de83cd0736b04f37106e4fd"
+  },
+  "skills/built-in/calculate-hash/scripts/index.js": {
+    "mtime": 1791404722.4160836,
+    "seen": 1791578701.0844262,
+    "ast_hash": "1cc99c0f90c2d8fb0664abcfeb4469ea",
+    "semantic_hash": "1cc99c0f90c2d8fb0664abcfeb4469ea"
+  },
+  "skills/featured/restaurant-roulette/scripts/index.js": {
+    "mtime": 1791404722.4166608,
+    "seen": 1791578701.0844264,
+    "ast_hash": "3ffdf3c247b2a347048301b8b723b8eb",
+    "semantic_hash": "3ffdf3c247b2a347048301b8b723b8eb"
+  },
+  "skills/featured/virtual-piano/scripts/index.js": {
+    "mtime": 1791404722.4402604,
+    "seen": 1791578701.084427,
+    "ast_hash": "ee9083a37a2184c61ed7655ff8fe951a",
+    "semantic_hash": "ee9083a37a2184c61ed7655ff8fe951a"
+  },
+  ".github/DISCUSSION_TEMPLATE/skills.yml": {
+    "mtime": 1791404722.40344,
+    "seen": 1791578701.0844274,
+    "ast_hash": "ab3e7a9cdf2b722a3700015858de0dd9",
+    "semantic_hash": "ab3e7a9cdf2b722a3700015858de0dd9"
+  },
+  ".github/ISSUE_TEMPLATE/bug_report.md": {
+    "mtime": 1791404722.4034631,
+    "seen": 1791578701.0844278,
+    "ast_hash": "5b94ebb0ca61386942e11cc76be5bc95",
+    "semantic_hash": "5b94ebb0ca61386942e11cc76be5bc95"
+  },
+  ".github/ISSUE_TEMPLATE/feature_request.md": {
+    "mtime": 1791404722.4034827,
+    "seen": 1791578701.0844283,
+    "ast_hash": "232e0c32f465affaddca74a6d69eab9d",
+    "semantic_hash": "232e0c32f465affaddca74a6d69eab9d"
+  },
+  ".github/ISSUE_TEMPLATE/support_request.md": {
+    "mtime": 1791404722.4034827,
+    "seen": 1791578701.0844285,
+    "ast_hash": "f723b208d9d3e0661a4d37d624fd0bca",
+    "semantic_hash": "f723b208d9d3e0661a4d37d624fd0bca"
+  },
+  ".github/workflows/build_android.yaml": {
+    "mtime": 1791404722.4034827,
+    "seen": 1791578701.084429,
+    "ast_hash": "8d296b871cc42a72f0f2cad04d647ae1",
+    "semantic_hash": "8d296b871cc42a72f0f2cad04d647ae1"
+  },
+  ".github/workflows/static.yml": {
+    "mtime": 1791404722.4035275,
+    "seen": 1791578701.0844295,
+    "ast_hash": "3c19905a9fa17a22e0669914a73d9cad",
+    "semantic_hash": "3c19905a9fa17a22e0669914a73d9cad"
+  },
+  "Android/README.md": {
+    "mtime": 1791404722.4035976,
+    "seen": 1791578701.0844297,
+    "ast_hash": "b6dcf2c119a501781ff3146b313afb39",
+    "semantic_hash": "b6dcf2c119a501781ff3146b313afb39"
+  },
+  "Android/src/app/src/main/assets/skills/calculate-hash/SKILL.md": {
+    "mtime": 1791404722.4037836,
+    "seen": 1791578701.0844302,
+    "ast_hash": "8ef397a80924e3c0cd9948c5e77c366e",
+    "semantic_hash": "8ef397a80924e3c0cd9948c5e77c366e"
+  },
+  "Android/src/app/src/main/assets/skills/interactive-map/SKILL.md": {
+    "mtime": 1791404722.403832,
+    "seen": 1791578701.0844307,
+    "ast_hash": "66d9691274dda7fae3cce396b82a9479",
+    "semantic_hash": "66d9691274dda7fae3cce396b82a9479"
+  },
+  "Android/src/app/src/main/assets/skills/interactive-map/scripts/index.html": {
+    "mtime": 1791404722.4038713,
+    "seen": 1791578701.0844312,
+    "ast_hash": "62f2e323c6369caf3c984379fd7bc55f",
+    "semantic_hash": "62f2e323c6369caf3c984379fd7bc55f"
+  },
+  "Android/src/app/src/main/assets/skills/kitchen-adventure/SKILL.md": {
+    "mtime": 1791404722.4038713,
+    "seen": 1791578701.0844314,
+    "ast_hash": "0cf36aac2f0cda8e981e9617f32e3b7a",
+    "semantic_hash": "0cf36aac2f0cda8e981e9617f32e3b7a"
+  },
+  "Android/src/app/src/main/assets/skills/mood-tracker/SKILL.md": {
+    "mtime": 1791404722.4038713,
+    "seen": 1791578701.084432,
+    "ast_hash": "d9a4d9ec858f3b785bacea80959ffa14",
+    "semantic_hash": "d9a4d9ec858f3b785bacea80959ffa14"
+  },
+  "Android/src/app/src/main/assets/skills/mood-tracker/assets/dashboard.html": {
+    "mtime": 1791404722.40393,
+    "seen": 1791578701.0844324,
+    "ast_hash": "73e80bbde3a573b127ad850cd0ca88e2",
+    "semantic_hash": "73e80bbde3a573b127ad850cd0ca88e2"
+  },
+  "Android/src/app/src/main/assets/skills/mood-tracker/scripts/index.html": {
+    "mtime": 1791404722.40393,
+    "seen": 1791578701.0844326,
+    "ast_hash": "dc73949b9d6d6f93f3f3880c5a3fd13a",
+    "semantic_hash": "dc73949b9d6d6f93f3f3880c5a3fd13a"
+  },
+  "Android/src/app/src/main/assets/skills/qr-code/SKILL.md": {
+    "mtime": 1791404722.40393,
+    "seen": 1791578701.084433,
+    "ast_hash": "ecee95728adcf4a77be164607275e6a2",
+    "semantic_hash": "ecee95728adcf4a77be164607275e6a2"
+  },
+  "Android/src/app/src/main/assets/skills/qr-code/scripts/index.html": {
+    "mtime": 1791404722.4040277,
+    "seen": 1791578701.0844336,
+    "ast_hash": "c72172f2d4d0fd641d923caaba4a90a7",
+    "semantic_hash": "c72172f2d4d0fd641d923caaba4a90a7"
+  },
+  "Android/src/app/src/main/assets/skills/query-wikipedia/SKILL.md": {
+    "mtime": 1791404722.4040277,
+    "seen": 1791578701.0844343,
+    "ast_hash": "1edd225b9b0c906d88d6d136ae670ab0",
+    "semantic_hash": "1edd225b9b0c906d88d6d136ae670ab0"
+  },
+  "Android/src/app/src/main/assets/skills/query-wikipedia/scripts/index.html": {
+    "mtime": 1791404722.4040718,
+    "seen": 1791578701.0844345,
+    "ast_hash": "c5e37e263d09b0bf62e34167aa91b3ef",
+    "semantic_hash": "c5e37e263d09b0bf62e34167aa91b3ef"
+  },
+  "Android/src/app/src/main/assets/skills/send-email/SKILL.md": {
+    "mtime": 1791404722.4040718,
+    "seen": 1791578701.084435,
+    "ast_hash": "f81f7c54297bce2d50d99128f4e1f1a5",
+    "semantic_hash": "f81f7c54297bce2d50d99128f4e1f1a5"
+  },
+  "Android/src/app/src/main/assets/skills/text-spinner/SKILL.md": {
+    "mtime": 1791404722.4040718,
+    "seen": 1791578701.0844352,
+    "ast_hash": "aafa6ccd07e7f0f3b6eb990f9f5ca082",
+    "semantic_hash": "aafa6ccd07e7f0f3b6eb990f9f5ca082"
+  },
+  "Android/src/app/src/main/assets/skills/text-spinner/assets/webview.html": {
+    "mtime": 1791404722.404118,
+    "seen": 1791578701.0844357,
+    "ast_hash": "b4ca9dbfa1d7e1eb3b38edaff4532138",
+    "semantic_hash": "b4ca9dbfa1d7e1eb3b38edaff4532138"
+  },
+  "Android/src/app/src/main/assets/skills/text-spinner/scripts/index.html": {
+    "mtime": 1791404722.404118,
+    "seen": 1791578701.084436,
+    "ast_hash": "9840ecd47616e7f13301f60f95a93bcf",
+    "semantic_hash": "9840ecd47616e7f13301f60f95a93bcf"
+  },
+  "Android/src/app/src/main/assets/tinygarden/index.html": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844364,
+    "ast_hash": "b1742ef49f39f985f4786e6bbbad585b",
+    "semantic_hash": "b1742ef49f39f985f4786e6bbbad585b"
+  },
+  "Bug_Reporting_Guide.md": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844367,
+    "ast_hash": "8f738abb320b9e87dbba0728e3a99883",
+    "semantic_hash": "8f738abb320b9e87dbba0728e3a99883"
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844371,
+    "ast_hash": "4508a199331772667655558e1992af3f",
+    "semantic_hash": "4508a199331772667655558e1992af3f"
+  },
+  "DEVELOPMENT.md": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844376,
+    "ast_hash": "3d0a9fd850646bc4fc255d564dae195b",
+    "semantic_hash": "3d0a9fd850646bc4fc255d564dae195b"
+  },
+  "Function_Calling_Guide.md": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.084438,
+    "ast_hash": "4dd0178b1d85010507689373781b51aa",
+    "semantic_hash": "4dd0178b1d85010507689373781b51aa"
+  },
+  "README.md": {
+    "mtime": 1791404722.415601,
+    "seen": 1791578701.0844386,
+    "ast_hash": "d69c52ba3ef4f746f2f513fde3069570",
+    "semantic_hash": "d69c52ba3ef4f746f2f513fde3069570"
+  },
+  "model_allowlists/README.md": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844388,
+    "ast_hash": "a3c19d06c1d8273b2f08d410281f91e3",
+    "semantic_hash": "a3c19d06c1d8273b2f08d410281f91e3"
+  },
+  "skills/README.md": {
+    "mtime": 1791404722.4158466,
+    "seen": 1791578701.0844393,
+    "ast_hash": "2af57da472ac6ccf46461c67317e2829",
+    "semantic_hash": "2af57da472ac6ccf46461c67317e2829"
+  },
+  "skills/built-in/calculate-hash/SKILL.md": {
+    "mtime": 1791404722.4160452,
+    "seen": 1791578701.0844395,
+    "ast_hash": "8ef397a80924e3c0cd9948c5e77c366e",
+    "semantic_hash": "8ef397a80924e3c0cd9948c5e77c366e"
+  },
+  "skills/built-in/interactive-map/SKILL.md": {
+    "mtime": 1791404722.4160836,
+    "seen": 1791578701.08444,
+    "ast_hash": "66d9691274dda7fae3cce396b82a9479",
+    "semantic_hash": "66d9691274dda7fae3cce396b82a9479"
+  },
+  "skills/built-in/interactive-map/scripts/index.html": {
+    "mtime": 1791404722.416121,
+    "seen": 1791578701.0844405,
+    "ast_hash": "62f2e323c6369caf3c984379fd7bc55f",
+    "semantic_hash": "62f2e323c6369caf3c984379fd7bc55f"
+  },
+  "skills/built-in/kitchen-adventure/SKILL.md": {
+    "mtime": 1791404722.416121,
+    "seen": 1791578701.084441,
+    "ast_hash": "0cf36aac2f0cda8e981e9617f32e3b7a",
+    "semantic_hash": "0cf36aac2f0cda8e981e9617f32e3b7a"
+  },
+  "skills/built-in/mood-tracker/SKILL.md": {
+    "mtime": 1791404722.416121,
+    "seen": 1791578701.0844414,
+    "ast_hash": "d9a4d9ec858f3b785bacea80959ffa14",
+    "semantic_hash": "d9a4d9ec858f3b785bacea80959ffa14"
+  },
+  "skills/built-in/mood-tracker/assets/dashboard.html": {
+    "mtime": 1791404722.4161854,
+    "seen": 1791578701.084442,
+    "ast_hash": "73e80bbde3a573b127ad850cd0ca88e2",
+    "semantic_hash": "73e80bbde3a573b127ad850cd0ca88e2"
+  },
+  "skills/built-in/mood-tracker/scripts/index.html": {
+    "mtime": 1791404722.4161854,
+    "seen": 1791578701.0844421,
+    "ast_hash": "dc73949b9d6d6f93f3f3880c5a3fd13a",
+    "semantic_hash": "dc73949b9d6d6f93f3f3880c5a3fd13a"
+  },
+  "skills/built-in/qr-code/SKILL.md": {
+    "mtime": 1791404722.4161854,
+    "seen": 1791578701.0844426,
+    "ast_hash": "ecee95728adcf4a77be164607275e6a2",
+    "semantic_hash": "ecee95728adcf4a77be164607275e6a2"
+  },
+  "skills/built-in/qr-code/scripts/index.html": {
+    "mtime": 1791404722.416273,
+    "seen": 1791578701.0844429,
+    "ast_hash": "c72172f2d4d0fd641d923caaba4a90a7",
+    "semantic_hash": "c72172f2d4d0fd641d923caaba4a90a7"
+  },
+  "skills/built-in/query-wikipedia/SKILL.md": {
+    "mtime": 1791404722.416273,
+    "seen": 1791578701.0844433,
+    "ast_hash": "1edd225b9b0c906d88d6d136ae670ab0",
+    "semantic_hash": "1edd225b9b0c906d88d6d136ae670ab0"
+  },
+  "skills/built-in/query-wikipedia/scripts/index.html": {
+    "mtime": 1791404722.416316,
+    "seen": 1791578701.0844438,
+    "ast_hash": "c5e37e263d09b0bf62e34167aa91b3ef",
+    "semantic_hash": "c5e37e263d09b0bf62e34167aa91b3ef"
+  },
+  "skills/built-in/send-email/SKILL.md": {
+    "mtime": 1791404722.416316,
+    "seen": 1791578701.084444,
+    "ast_hash": "f81f7c54297bce2d50d99128f4e1f1a5",
+    "semantic_hash": "f81f7c54297bce2d50d99128f4e1f1a5"
+  },
+  "skills/built-in/text-spinner/SKILL.md": {
+    "mtime": 1791404722.416316,
+    "seen": 1791578701.0844448,
+    "ast_hash": "aafa6ccd07e7f0f3b6eb990f9f5ca082",
+    "semantic_hash": "aafa6ccd07e7f0f3b6eb990f9f5ca082"
+  },
+  "skills/built-in/text-spinner/assets/webview.html": {
+    "mtime": 1791404722.416365,
+    "seen": 1791578701.0844452,
+    "ast_hash": "b4ca9dbfa1d7e1eb3b38edaff4532138",
+    "semantic_hash": "b4ca9dbfa1d7e1eb3b38edaff4532138"
+  },
+  "skills/built-in/text-spinner/scripts/index.html": {
+    "mtime": 1791404722.416365,
+    "seen": 1791578701.0844457,
+    "ast_hash": "9840ecd47616e7f13301f60f95a93bcf",
+    "semantic_hash": "9840ecd47616e7f13301f60f95a93bcf"
+  },
+  "skills/featured/mood-music/README.md": {
+    "mtime": 1791404722.416427,
+    "seen": 1791578701.0844462,
+    "ast_hash": "f4495ec451a7a6999b501eb679d74df1",
+    "semantic_hash": "f4495ec451a7a6999b501eb679d74df1"
+  },
+  "skills/featured/mood-music/SKILL.md": {
+    "mtime": 1791404722.4164586,
+    "seen": 1791578701.0844467,
+    "ast_hash": "a3f5af33bfce760a868ce76dd03dbcb7",
+    "semantic_hash": "a3f5af33bfce760a868ce76dd03dbcb7"
+  },
+  "skills/featured/mood-music/assets/webview.html": {
+    "mtime": 1791404722.416488,
+    "seen": 1791578701.084447,
+    "ast_hash": "9eb7fe4d02e6ec9cb2bd259e8a0b29e6",
+    "semantic_hash": "9eb7fe4d02e6ec9cb2bd259e8a0b29e6"
+  },
+  "skills/featured/mood-music/scripts/get_genres.html": {
+    "mtime": 1791404722.4165392,
+    "seen": 1791578701.0844474,
+    "ast_hash": "32fddf3182eb5ea90e699408fcffe921",
+    "semantic_hash": "32fddf3182eb5ea90e699408fcffe921"
+  },
+  "skills/featured/mood-music/scripts/index.html": {
+    "mtime": 1791404722.4165392,
+    "seen": 1791578701.0844479,
+    "ast_hash": "306baa0501679a910b235c27d69d1669",
+    "semantic_hash": "306baa0501679a910b235c27d69d1669"
+  },
+  "skills/featured/restaurant-roulette/README.md": {
+    "mtime": 1791404722.4165392,
+    "seen": 1791578701.0844483,
+    "ast_hash": "64103b49f1105e8e16ec5035ebd3b096",
+    "semantic_hash": "64103b49f1105e8e16ec5035ebd3b096"
+  },
+  "skills/featured/restaurant-roulette/SKILL.md": {
+    "mtime": 1791404722.416586,
+    "seen": 1791578701.0844488,
+    "ast_hash": "a3cf6d3f0a7c83ae2d55b2cabc3bf0c5",
+    "semantic_hash": "a3cf6d3f0a7c83ae2d55b2cabc3bf0c5"
+  },
+  "skills/featured/restaurant-roulette/assets/ui.html": {
+    "mtime": 1791404722.416586,
+    "seen": 1791578701.084449,
+    "ast_hash": "8e6fead87a98f02dbeec20c8c59d5f28",
+    "semantic_hash": "8e6fead87a98f02dbeec20c8c59d5f28"
+  },
+  "skills/featured/restaurant-roulette/assets/webview.html": {
+    "mtime": 1791404722.4166305,
+    "seen": 1791578701.0844495,
+    "ast_hash": "33702bbd61a4fd16deacd925a0a61667",
+    "semantic_hash": "33702bbd61a4fd16deacd925a0a61667"
+  },
+  "skills/featured/restaurant-roulette/scripts/index.html": {
+    "mtime": 1791404722.4166305,
+    "seen": 1791578701.08445,
+    "ast_hash": "b33b2296824a16a229cb8d987f9a1c69",
+    "semantic_hash": "b33b2296824a16a229cb8d987f9a1c69"
+  },
+  "skills/featured/virtual-piano/README.md": {
+    "mtime": 1791404722.4166608,
+    "seen": 1791578701.0844505,
+    "ast_hash": "3ec878e64e4023a07b9ee831ecfc394b",
+    "semantic_hash": "3ec878e64e4023a07b9ee831ecfc394b"
+  },
+  "skills/featured/virtual-piano/SKILL.md": {
+    "mtime": 1791404722.4166815,
+    "seen": 1791578701.084451,
+    "ast_hash": "bd103f738c80e55b809dd20b1a024030",
+    "semantic_hash": "bd103f738c80e55b809dd20b1a024030"
+  },
+  "skills/featured/virtual-piano/assets/ui.html": {
+    "mtime": 1791404722.4389617,
+    "seen": 1791578701.0844517,
+    "ast_hash": "2f9afb60fd456110f6fb37187f1df871",
+    "semantic_hash": "2f9afb60fd456110f6fb37187f1df871"
+  },
+  "skills/featured/virtual-piano/scripts/index.html": {
+    "mtime": 1791404722.4389617,
+    "seen": 1791578701.084452,
+    "ast_hash": "a5d1dd5d8c0871cb96426516ef8115fa",
+    "semantic_hash": "a5d1dd5d8c0871cb96426516ef8115fa"
+  },
+  "Android/src/app/src/main/assets/tinygarden/check_status.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844524,
+    "ast_hash": "cf2479960067ff1ff6a6c08c223ad7b6",
+    "semantic_hash": "cf2479960067ff1ff6a6c08c223ad7b6"
+  },
+  "Android/src/app/src/main/assets/tinygarden/close.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844526,
+    "ast_hash": "92e4377fdb5260efc1cd04eb3ec61530",
+    "semantic_hash": "92e4377fdb5260efc1cd04eb3ec61530"
+  },
+  "Android/src/app/src/main/assets/tinygarden/dirt.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.084453,
+    "ast_hash": "314d767438d5ac0ee9df0651479e189d",
+    "semantic_hash": "314d767438d5ac0ee9df0651479e189d"
+  },
+  "Android/src/app/src/main/assets/tinygarden/error.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844533,
+    "ast_hash": "130c0f5a407a44cbcfbcada483c5ca39",
+    "semantic_hash": "130c0f5a407a44cbcfbcada483c5ca39"
+  },
+  "Android/src/app/src/main/assets/tinygarden/goal.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844538,
+    "ast_hash": "29eb06df8dd640295ab80d7a842e1981",
+    "semantic_hash": "29eb06df8dd640295ab80d7a842e1981"
+  },
+  "Android/src/app/src/main/assets/tinygarden/goal_gallery.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844543,
+    "ast_hash": "0e126dfc91eb0551c47dbf255937cd9b",
+    "semantic_hash": "0e126dfc91eb0551c47dbf255937cd9b"
+  },
+  "Android/src/app/src/main/assets/tinygarden/inventory.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844548,
+    "ast_hash": "3386b35a193c3461de4d3658d4937149",
+    "semantic_hash": "3386b35a193c3461de4d3658d4937149"
+  },
+  "Android/src/app/src/main/assets/tinygarden/plop.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844553,
+    "ast_hash": "8a4f9bb732720fe61ab8f5f23d3088e4",
+    "semantic_hash": "8a4f9bb732720fe61ab8f5f23d3088e4"
+  },
+  "Android/src/app/src/main/assets/tinygarden/plop2.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.0844557,
+    "ast_hash": "f958a22de4abcc6a1e7a76a8b846117c",
+    "semantic_hash": "f958a22de4abcc6a1e7a76a8b846117c"
+  },
+  "Android/src/app/src/main/assets/tinygarden/plop3.mp3": {
+    "mtime": 1791404722.4042115,
+    "seen": 1791578701.084456,
+    "ast_hash": "2ce07754a9ebe0dd907b6c6f33497c7a",
+    "semantic_hash": "2ce07754a9ebe0dd907b6c6f33497c7a"
+  },
+  "Android/src/app/src/main/assets/tinygarden/watering.mp3": {
+    "mtime": 1791404722.4049606,
+    "seen": 1791578701.0844564,
+    "ast_hash": "5ec64f553e923a178cd6ac1eb012ce09",
+    "semantic_hash": "5ec64f553e923a178cd6ac1eb012ce09"
+  },
+  "Android/src/app/src/main/assets/tinygarden/whip.mp3": {
+    "mtime": 1791404722.4049606,
+    "seen": 1791578701.0844567,
+    "ast_hash": "217ee531d1813265ae850a5a3a2d1655",
+    "semantic_hash": "217ee531d1813265ae850a5a3a2d1655"
+  },
+  "skills/featured/virtual-piano/assets/assets/1.mp3": {
+    "mtime": 1791404722.4166965,
+    "seen": 1791578701.0844572,
+    "ast_hash": "a839664bc6180286a937056dec6ab1e8",
+    "semantic_hash": "a839664bc6180286a937056dec6ab1e8"
+  },
+  "skills/featured/virtual-piano/assets/assets/10.mp3": {
+    "mtime": 1791404722.4170256,
+    "seen": 1791578701.0844574,
+    "ast_hash": "57260ec52d5361b65a0cc47460a319fe",
+    "semantic_hash": "57260ec52d5361b65a0cc47460a319fe"
+  },
+  "skills/featured/virtual-piano/assets/assets/11.mp3": {
+    "mtime": 1791404722.4170256,
+    "seen": 1791578701.0844579,
+    "ast_hash": "20b0f6160c948ba8c167a7d8f01291cf",
+    "semantic_hash": "20b0f6160c948ba8c167a7d8f01291cf"
+  },
+  "skills/featured/virtual-piano/assets/assets/12.mp3": {
+    "mtime": 1791404722.4170256,
+    "seen": 1791578701.0844586,
+    "ast_hash": "61dc169d889627dd17edbeab10e30be9",
+    "semantic_hash": "61dc169d889627dd17edbeab10e30be9"
+  },
+  "skills/featured/virtual-piano/assets/assets/13.mp3": {
+    "mtime": 1791404722.4170256,
+    "seen": 1791578701.084459,
+    "ast_hash": "7f14095702ca6a4c6dccba058e33b7db",
+    "semantic_hash": "7f14095702ca6a4c6dccba058e33b7db"
+  },
+  "skills/featured/virtual-piano/assets/assets/14.mp3": {
+    "mtime": 1791404722.4170256,
+    "seen": 1791578701.0844593,
+    "ast_hash": "6ec0b30426dfb9ffd69b7ddea8dcec0b",
+    "semantic_hash": "6ec0b30426dfb9ffd69b7ddea8dcec0b"
+  },
+  "skills/featured/virtual-piano/assets/assets/15.mp3": {
+    "mtime": 1791404722.417961,
+    "seen": 1791578701.0844598,
+    "ast_hash": "95be311e8d7f0e81365c2a17dfd7bb87",
+    "semantic_hash": "95be311e8d7f0e81365c2a17dfd7bb87"
+  },
+  "skills/featured/virtual-piano/assets/assets/16.mp3": {
+    "mtime": 1791404722.417961,
+    "seen": 1791578701.0844603,
+    "ast_hash": "29ec96c858d4bdb6b89d6d31e3213dc4",
+    "semantic_hash": "29ec96c858d4bdb6b89d6d31e3213dc4"
+  },
+  "skills/featured/virtual-piano/assets/assets/17.mp3": {
+    "mtime": 1791404722.417961,
+    "seen": 1791578701.0844607,
+    "ast_hash": "32d3068a27ed47529bd4ed37eba215aa",
+    "semantic_hash": "32d3068a27ed47529bd4ed37eba215aa"
+  },
+  "skills/featured/virtual-piano/assets/assets/18.mp3": {
+    "mtime": 1791404722.417961,
+    "seen": 1791578701.084461,
+    "ast_hash": "cd24f478954b98d8185bdd7506668287",
+    "semantic_hash": "cd24f478954b98d8185bdd7506668287"
+  },
+  "skills/featured/virtual-piano/assets/assets/19.mp3": {
+    "mtime": 1791404722.418961,
+    "seen": 1791578701.0844615,
+    "ast_hash": "b8a7dd11e28a710492e3b9c9971b4684",
+    "semantic_hash": "b8a7dd11e28a710492e3b9c9971b4684"
+  },
+  "skills/featured/virtual-piano/assets/assets/2.mp3": {
+    "mtime": 1791404722.418961,
+    "seen": 1791578701.084462,
+    "ast_hash": "6f9270c4d30d0e40e765f97166ab6703",
+    "semantic_hash": "6f9270c4d30d0e40e765f97166ab6703"
+  },
+  "skills/featured/virtual-piano/assets/assets/20.mp3": {
+    "mtime": 1791404722.418961,
+    "seen": 1791578701.0844624,
+    "ast_hash": "c6bcd853e5fd8e363713f8b7a16e0a47",
+    "semantic_hash": "c6bcd853e5fd8e363713f8b7a16e0a47"
+  },
+  "skills/featured/virtual-piano/assets/assets/21.mp3": {
+    "mtime": 1791404722.418961,
+    "seen": 1791578701.084463,
+    "ast_hash": "5cb1385dbbd665bcbcc0ccc74cf03dac",
+    "semantic_hash": "5cb1385dbbd665bcbcc0ccc74cf03dac"
+  },
+  "skills/featured/virtual-piano/assets/assets/22.mp3": {
+    "mtime": 1791404722.419961,
+    "seen": 1791578701.0844631,
+    "ast_hash": "5ae1ea10993700fc1dcc0b69bab5af1e",
+    "semantic_hash": "5ae1ea10993700fc1dcc0b69bab5af1e"
+  },
+  "skills/featured/virtual-piano/assets/assets/23.mp3": {
+    "mtime": 1791404722.419961,
+    "seen": 1791578701.0844636,
+    "ast_hash": "cee6aef62b2d649fe760468e71cd806d",
+    "semantic_hash": "cee6aef62b2d649fe760468e71cd806d"
+  },
+  "skills/featured/virtual-piano/assets/assets/24.mp3": {
+    "mtime": 1791404722.419961,
+    "seen": 1791578701.0844638,
+    "ast_hash": "da2e44863173e73da273b9a95f34eb41",
+    "semantic_hash": "da2e44863173e73da273b9a95f34eb41"
+  },
+  "skills/featured/virtual-piano/assets/assets/25.mp3": {
+    "mtime": 1791404722.419961,
+    "seen": 1791578701.0844643,
+    "ast_hash": "6778685c3b000837dd638bc6043f8910",
+    "semantic_hash": "6778685c3b000837dd638bc6043f8910"
+  },
+  "skills/featured/virtual-piano/assets/assets/26.mp3": {
+    "mtime": 1791404722.4209611,
+    "seen": 1791578701.0844646,
+    "ast_hash": "80101461767d0581792ac02553463634",
+    "semantic_hash": "80101461767d0581792ac02553463634"
+  },
+  "skills/featured/virtual-piano/assets/assets/27.mp3": {
+    "mtime": 1791404722.4209611,
+    "seen": 1791578701.0844653,
+    "ast_hash": "38d0d8417ae3423b578c258b521f5e76",
+    "semantic_hash": "38d0d8417ae3423b578c258b521f5e76"
+  },
+  "skills/featured/virtual-piano/assets/assets/28.mp3": {
+    "mtime": 1791404722.4209611,
+    "seen": 1791578701.0844657,
+    "ast_hash": "d1ad99607b2c240250fbd5068ea30707",
+    "semantic_hash": "d1ad99607b2c240250fbd5068ea30707"
+  },
+  "skills/featured/virtual-piano/assets/assets/29.mp3": {
+    "mtime": 1791404722.4209611,
+    "seen": 1791578701.084466,
+    "ast_hash": "886c065a8c5b3238b1d98706a7564a14",
+    "semantic_hash": "886c065a8c5b3238b1d98706a7564a14"
+  },
+  "skills/featured/virtual-piano/assets/assets/3.mp3": {
+    "mtime": 1791404722.421961,
+    "seen": 1791578701.0844665,
+    "ast_hash": "586c95e940af521d6ea485ba951e3673",
+    "semantic_hash": "586c95e940af521d6ea485ba951e3673"
+  },
+  "skills/featured/virtual-piano/assets/assets/30.mp3": {
+    "mtime": 1791404722.421961,
+    "seen": 1791578701.0844667,
+    "ast_hash": "c1b0c63243a580d900fd474af90bdb0b",
+    "semantic_hash": "c1b0c63243a580d900fd474af90bdb0b"
+  },
+  "skills/featured/virtual-piano/assets/assets/31.mp3": {
+    "mtime": 1791404722.421961,
+    "seen": 1791578701.0844672,
+    "ast_hash": "515da196de5e9b1426ad8a83691a2f0c",
+    "semantic_hash": "515da196de5e9b1426ad8a83691a2f0c"
+  },
+  "skills/featured/virtual-piano/assets/assets/32.mp3": {
+    "mtime": 1791404722.421961,
+    "seen": 1791578701.0844674,
+    "ast_hash": "f3c16fe7d2afcab559e46a1cbab28beb",
+    "semantic_hash": "f3c16fe7d2afcab559e46a1cbab28beb"
+  },
+  "skills/featured/virtual-piano/assets/assets/33.mp3": {
+    "mtime": 1791404722.4229612,
+    "seen": 1791578701.084468,
+    "ast_hash": "aceb40f81536ffde2afa68487ad0f1c5",
+    "semantic_hash": "aceb40f81536ffde2afa68487ad0f1c5"
+  },
+  "skills/featured/virtual-piano/assets/assets/34.mp3": {
+    "mtime": 1791404722.4229612,
+    "seen": 1791578701.0844684,
+    "ast_hash": "c5266ae1c2fe1e9f50183e7239300738",
+    "semantic_hash": "c5266ae1c2fe1e9f50183e7239300738"
+  },
+  "skills/featured/virtual-piano/assets/assets/35.mp3": {
+    "mtime": 1791404722.4229612,
+    "seen": 1791578701.084469,
+    "ast_hash": "391016bbad8da602722e411185dded84",
+    "semantic_hash": "391016bbad8da602722e411185dded84"
+  },
+  "skills/featured/virtual-piano/assets/assets/36.mp3": {
+    "mtime": 1791404722.4229612,
+    "seen": 1791578701.0844693,
+    "ast_hash": "efd566b366a4691b99ef6e760b59d19d",
+    "semantic_hash": "efd566b366a4691b99ef6e760b59d19d"
+  },
+  "skills/featured/virtual-piano/assets/assets/37.mp3": {
+    "mtime": 1791404722.4239612,
+    "seen": 1791578701.0844698,
+    "ast_hash": "b148b14ddb159b3d6881c4021b1a16bb",
+    "semantic_hash": "b148b14ddb159b3d6881c4021b1a16bb"
+  },
+  "skills/featured/virtual-piano/assets/assets/38.mp3": {
+    "mtime": 1791404722.4239612,
+    "seen": 1791578701.0844703,
+    "ast_hash": "2cc13780f591016903d6789d356482df",
+    "semantic_hash": "2cc13780f591016903d6789d356482df"
+  },
+  "skills/featured/virtual-piano/assets/assets/39.mp3": {
+    "mtime": 1791404722.4239612,
+    "seen": 1791578701.0844705,
+    "ast_hash": "01178538a7396035d237acd64772e13f",
+    "semantic_hash": "01178538a7396035d237acd64772e13f"
+  },
+  "skills/featured/virtual-piano/assets/assets/4.mp3": {
+    "mtime": 1791404722.424961,
+    "seen": 1791578701.084471,
+    "ast_hash": "e3284e624d6c6cb46907d1872ede05ff",
+    "semantic_hash": "e3284e624d6c6cb46907d1872ede05ff"
+  },
+  "skills/featured/virtual-piano/assets/assets/40.mp3": {
+    "mtime": 1791404722.424961,
+    "seen": 1791578701.0844712,
+    "ast_hash": "77373448bbce3fcf46a06d3000ae39d5",
+    "semantic_hash": "77373448bbce3fcf46a06d3000ae39d5"
+  },
+  "skills/featured/virtual-piano/assets/assets/41.mp3": {
+    "mtime": 1791404722.424961,
+    "seen": 1791578701.0844715,
+    "ast_hash": "71d5ca9f3a207bbb7ca24b014f25fe42",
+    "semantic_hash": "71d5ca9f3a207bbb7ca24b014f25fe42"
+  },
+  "skills/featured/virtual-piano/assets/assets/42.mp3": {
+    "mtime": 1791404722.424961,
+    "seen": 1791578701.0844722,
+    "ast_hash": "1832fcc2e48364835c3f203e17b94353",
+    "semantic_hash": "1832fcc2e48364835c3f203e17b94353"
+  },
+  "skills/featured/virtual-piano/assets/assets/43.mp3": {
+    "mtime": 1791404722.4259613,
+    "seen": 1791578701.0844727,
+    "ast_hash": "6bf573cfad342d2bb1efb8fa52c5875c",
+    "semantic_hash": "6bf573cfad342d2bb1efb8fa52c5875c"
+  },
+  "skills/featured/virtual-piano/assets/assets/44.mp3": {
+    "mtime": 1791404722.4259613,
+    "seen": 1791578701.084473,
+    "ast_hash": "cdd62be0e30fc82e143316c47a78f331",
+    "semantic_hash": "cdd62be0e30fc82e143316c47a78f331"
+  },
+  "skills/featured/virtual-piano/assets/assets/45.mp3": {
+    "mtime": 1791404722.4259613,
+    "seen": 1791578701.0844734,
+    "ast_hash": "7354461db98f9527210a47dd1743e34d",
+    "semantic_hash": "7354461db98f9527210a47dd1743e34d"
+  },
+  "skills/featured/virtual-piano/assets/assets/46.mp3": {
+    "mtime": 1791404722.4259613,
+    "seen": 1791578701.0844738,
+    "ast_hash": "57b1ab4c46be6c7e34591ba6b5a2de69",
+    "semantic_hash": "57b1ab4c46be6c7e34591ba6b5a2de69"
+  },
+  "skills/featured/virtual-piano/assets/assets/47.mp3": {
+    "mtime": 1791404722.4269612,
+    "seen": 1791578701.084474,
+    "ast_hash": "0d6d74951e6ab07107b6ce9df0e8ad37",
+    "semantic_hash": "0d6d74951e6ab07107b6ce9df0e8ad37"
+  },
+  "skills/featured/virtual-piano/assets/assets/48.mp3": {
+    "mtime": 1791404722.4269612,
+    "seen": 1791578701.0844746,
+    "ast_hash": "b9d6a117656d6e3de598c186e86cc103",
+    "semantic_hash": "b9d6a117656d6e3de598c186e86cc103"
+  },
+  "skills/featured/virtual-piano/assets/assets/49.mp3": {
+    "mtime": 1791404722.4269612,
+    "seen": 1791578701.084475,
+    "ast_hash": "6a2d70e43a7e9bc216669f922d7b93ee",
+    "semantic_hash": "6a2d70e43a7e9bc216669f922d7b93ee"
+  },
+  "skills/featured/virtual-piano/assets/assets/5.mp3": {
+    "mtime": 1791404722.4269612,
+    "seen": 1791578701.0844753,
+    "ast_hash": "6aa897bef8644179ce8b348f5b5bd563",
+    "semantic_hash": "6aa897bef8644179ce8b348f5b5bd563"
+  },
+  "skills/featured/virtual-piano/assets/assets/50.mp3": {
+    "mtime": 1791404722.4279613,
+    "seen": 1791578701.084476,
+    "ast_hash": "8cb3121d1d2f3e39ad6fa8a333af654e",
+    "semantic_hash": "8cb3121d1d2f3e39ad6fa8a333af654e"
+  },
+  "skills/featured/virtual-piano/assets/assets/51.mp3": {
+    "mtime": 1791404722.4279613,
+    "seen": 1791578701.0844762,
+    "ast_hash": "f27c3fa6a0ec07d22ba492b388adcef1",
+    "semantic_hash": "f27c3fa6a0ec07d22ba492b388adcef1"
+  },
+  "skills/featured/virtual-piano/assets/assets/52.mp3": {
+    "mtime": 1791404722.4279613,
+    "seen": 1791578701.0844767,
+    "ast_hash": "6e8c6d5f046114e4071e2ce7001d49f8",
+    "semantic_hash": "6e8c6d5f046114e4071e2ce7001d49f8"
+  },
+  "skills/featured/virtual-piano/assets/assets/53.mp3": {
+    "mtime": 1791404722.4289613,
+    "seen": 1791578701.0844772,
+    "ast_hash": "54d76116e65d8031e5500e8a00b08cbc",
+    "semantic_hash": "54d76116e65d8031e5500e8a00b08cbc"
+  },
+  "skills/featured/virtual-piano/assets/assets/54.mp3": {
+    "mtime": 1791404722.4289613,
+    "seen": 1791578701.0844786,
+    "ast_hash": "4f02cd5c968985cfed4ef53eecb94ac3",
+    "semantic_hash": "4f02cd5c968985cfed4ef53eecb94ac3"
+  },
+  "skills/featured/virtual-piano/assets/assets/55.mp3": {
+    "mtime": 1791404722.4289613,
+    "seen": 1791578701.0844793,
+    "ast_hash": "45dc5c59e1d861809248c50646b9b760",
+    "semantic_hash": "45dc5c59e1d861809248c50646b9b760"
+  },
+  "skills/featured/virtual-piano/assets/assets/56.mp3": {
+    "mtime": 1791404722.4289613,
+    "seen": 1791578701.0844796,
+    "ast_hash": "1d7533d0cc04cb78c7e695992ddd1ce6",
+    "semantic_hash": "1d7533d0cc04cb78c7e695992ddd1ce6"
+  },
+  "skills/featured/virtual-piano/assets/assets/57.mp3": {
+    "mtime": 1791404722.4299614,
+    "seen": 1791578701.08448,
+    "ast_hash": "4a86af56b8ea89de92e4ef88b1df4220",
+    "semantic_hash": "4a86af56b8ea89de92e4ef88b1df4220"
+  },
+  "skills/featured/virtual-piano/assets/assets/58.mp3": {
+    "mtime": 1791404722.4299614,
+    "seen": 1791578701.0844805,
+    "ast_hash": "5ac781bb1624042dc20537015221603f",
+    "semantic_hash": "5ac781bb1624042dc20537015221603f"
+  },
+  "skills/featured/virtual-piano/assets/assets/59.mp3": {
+    "mtime": 1791404722.4299614,
+    "seen": 1791578701.0844808,
+    "ast_hash": "c5e73b307a5b797037cd8954a4bcb499",
+    "semantic_hash": "c5e73b307a5b797037cd8954a4bcb499"
+  },
+  "skills/featured/virtual-piano/assets/assets/6.mp3": {
+    "mtime": 1791404722.4309614,
+    "seen": 1791578701.0844812,
+    "ast_hash": "3595b5ce89c1d39da0986dbe04e34860",
+    "semantic_hash": "3595b5ce89c1d39da0986dbe04e34860"
+  },
+  "skills/featured/virtual-piano/assets/assets/60.mp3": {
+    "mtime": 1791404722.4309614,
+    "seen": 1791578701.0844815,
+    "ast_hash": "b69031f730646e2bd92fad5813e9a779",
+    "semantic_hash": "b69031f730646e2bd92fad5813e9a779"
+  },
+  "skills/featured/virtual-piano/assets/assets/61.mp3": {
+    "mtime": 1791404722.4309614,
+    "seen": 1791578701.084482,
+    "ast_hash": "72cd8e46a45997ce40507d07aaa37739",
+    "semantic_hash": "72cd8e46a45997ce40507d07aaa37739"
+  },
+  "skills/featured/virtual-piano/assets/assets/62.mp3": {
+    "mtime": 1791404722.4309614,
+    "seen": 1791578701.0844827,
+    "ast_hash": "0f2b84af4374535e9e8d3526946ee2c7",
+    "semantic_hash": "0f2b84af4374535e9e8d3526946ee2c7"
+  },
+  "skills/featured/virtual-piano/assets/assets/63.mp3": {
+    "mtime": 1791404722.4319615,
+    "seen": 1791578701.084483,
+    "ast_hash": "f42f45cd2d59a8b703379f2d9e81cf50",
+    "semantic_hash": "f42f45cd2d59a8b703379f2d9e81cf50"
+  },
+  "skills/featured/virtual-piano/assets/assets/64.mp3": {
+    "mtime": 1791404722.4319615,
+    "seen": 1791578701.0844834,
+    "ast_hash": "570d875059f107116fddb4de8faa005a",
+    "semantic_hash": "570d875059f107116fddb4de8faa005a"
+  },
+  "skills/featured/virtual-piano/assets/assets/65.mp3": {
+    "mtime": 1791404722.4319615,
+    "seen": 1791578701.0844836,
+    "ast_hash": "c373d3f462e3814ab5de1e561c7152ec",
+    "semantic_hash": "c373d3f462e3814ab5de1e561c7152ec"
+  },
+  "skills/featured/virtual-piano/assets/assets/66.mp3": {
+    "mtime": 1791404722.4319615,
+    "seen": 1791578701.084484,
+    "ast_hash": "e8aeb50e1bd10622043455b7971b83a7",
+    "semantic_hash": "e8aeb50e1bd10622043455b7971b83a7"
+  },
+  "skills/featured/virtual-piano/assets/assets/67.mp3": {
+    "mtime": 1791404722.4329615,
+    "seen": 1791578701.0844846,
+    "ast_hash": "1b7976199434948cf02f18a9f5ea8a45",
+    "semantic_hash": "1b7976199434948cf02f18a9f5ea8a45"
+  },
+  "skills/featured/virtual-piano/assets/assets/68.mp3": {
+    "mtime": 1791404722.4329615,
+    "seen": 1791578701.0844848,
+    "ast_hash": "b9dff3c72f3853b330d128d3bfd5e969",
+    "semantic_hash": "b9dff3c72f3853b330d128d3bfd5e969"
+  },
+  "skills/featured/virtual-piano/assets/assets/69.mp3": {
+    "mtime": 1791404722.4329615,
+    "seen": 1791578701.0844853,
+    "ast_hash": "ee344b1d12692741fd75133dc2ddf707",
+    "semantic_hash": "ee344b1d12692741fd75133dc2ddf707"
+  },
+  "skills/featured/virtual-piano/assets/assets/7.mp3": {
+    "mtime": 1791404722.4339614,
+    "seen": 1791578701.0844858,
+    "ast_hash": "c75bc28feef1d143ab9871e65b4b3ae8",
+    "semantic_hash": "c75bc28feef1d143ab9871e65b4b3ae8"
+  },
+  "skills/featured/virtual-piano/assets/assets/70.mp3": {
+    "mtime": 1791404722.4339614,
+    "seen": 1791578701.0844862,
+    "ast_hash": "66af49148b327da29c88474beb4f1a04",
+    "semantic_hash": "66af49148b327da29c88474beb4f1a04"
+  },
+  "skills/featured/virtual-piano/assets/assets/71.mp3": {
+    "mtime": 1791404722.4339614,
+    "seen": 1791578701.0844867,
+    "ast_hash": "efbb245bd68b4644da2391877f7a0766",
+    "semantic_hash": "efbb245bd68b4644da2391877f7a0766"
+  },
+  "skills/featured/virtual-piano/assets/assets/72.mp3": {
+    "mtime": 1791404722.4339614,
+    "seen": 1791578701.084487,
+    "ast_hash": "8fb36a55a7fb79b77200d1a234a8c395",
+    "semantic_hash": "8fb36a55a7fb79b77200d1a234a8c395"
+  },
+  "skills/featured/virtual-piano/assets/assets/73.mp3": {
+    "mtime": 1791404722.4349616,
+    "seen": 1791578701.0844874,
+    "ast_hash": "e41d7419bb0ca0661eecdef2877c29f2",
+    "semantic_hash": "e41d7419bb0ca0661eecdef2877c29f2"
+  },
+  "skills/featured/virtual-piano/assets/assets/74.mp3": {
+    "mtime": 1791404722.4349616,
+    "seen": 1791578701.084488,
+    "ast_hash": "e4e3b601c1ba1bd24365bac5d40ac535",
+    "semantic_hash": "e4e3b601c1ba1bd24365bac5d40ac535"
+  },
+  "skills/featured/virtual-piano/assets/assets/75.mp3": {
+    "mtime": 1791404722.4349616,
+    "seen": 1791578701.0844882,
+    "ast_hash": "5ba5d990c6ce677526ee62fa14921a6e",
+    "semantic_hash": "5ba5d990c6ce677526ee62fa14921a6e"
+  },
+  "skills/featured/virtual-piano/assets/assets/76.mp3": {
+    "mtime": 1791404722.4349616,
+    "seen": 1791578701.0844886,
+    "ast_hash": "26cecbc81c4b2ec14bc06ac3554a7fa7",
+    "semantic_hash": "26cecbc81c4b2ec14bc06ac3554a7fa7"
+  },
+  "skills/featured/virtual-piano/assets/assets/77.mp3": {
+    "mtime": 1791404722.4359615,
+    "seen": 1791578701.0844889,
+    "ast_hash": "03125f51e5d0841e22540738e6333a78",
+    "semantic_hash": "03125f51e5d0841e22540738e6333a78"
+  },
+  "skills/featured/virtual-piano/assets/assets/78.mp3": {
+    "mtime": 1791404722.4359615,
+    "seen": 1791578701.0844896,
+    "ast_hash": "fdb974200825bcb57f1f2602cf3860e3",
+    "semantic_hash": "fdb974200825bcb57f1f2602cf3860e3"
+  },
+  "skills/featured/virtual-piano/assets/assets/79.mp3": {
+    "mtime": 1791404722.4359615,
+    "seen": 1791578701.0844913,
+    "ast_hash": "58948d445c8207e90f9dbb275771a61a",
+    "semantic_hash": "58948d445c8207e90f9dbb275771a61a"
+  },
+  "skills/featured/virtual-piano/assets/assets/8.mp3": {
+    "mtime": 1791404722.4359615,
+    "seen": 1791578701.0844917,
+    "ast_hash": "2b94ff3977d556854be6792dd844b2d9",
+    "semantic_hash": "2b94ff3977d556854be6792dd844b2d9"
+  },
+  "skills/featured/virtual-piano/assets/assets/80.mp3": {
+    "mtime": 1791404722.4369617,
+    "seen": 1791578701.0844922,
+    "ast_hash": "528074df4b6b5e910c506b112b16923e",
+    "semantic_hash": "528074df4b6b5e910c506b112b16923e"
+  },
+  "skills/featured/virtual-piano/assets/assets/81.mp3": {
+    "mtime": 1791404722.4369617,
+    "seen": 1791578701.0844924,
+    "ast_hash": "158be38929fb4e9ffd349f346cc0625d",
+    "semantic_hash": "158be38929fb4e9ffd349f346cc0625d"
+  },
+  "skills/featured/virtual-piano/assets/assets/82.mp3": {
+    "mtime": 1791404722.4369617,
+    "seen": 1791578701.0844932,
+    "ast_hash": "6cdb7d68ad5502ca0dbc6d3d708681cf",
+    "semantic_hash": "6cdb7d68ad5502ca0dbc6d3d708681cf"
+  },
+  "skills/featured/virtual-piano/assets/assets/83.mp3": {
+    "mtime": 1791404722.4379616,
+    "seen": 1791578701.0844936,
+    "ast_hash": "1835464ed2525f302c3a3b0c1cc35f37",
+    "semantic_hash": "1835464ed2525f302c3a3b0c1cc35f37"
+  },
+  "skills/featured/virtual-piano/assets/assets/84.mp3": {
+    "mtime": 1791404722.4379616,
+    "seen": 1791578701.0844939,
+    "ast_hash": "2b78aab8cc6fbbcd578d5cdf54ae9e8c",
+    "semantic_hash": "2b78aab8cc6fbbcd578d5cdf54ae9e8c"
+  },
+  "skills/featured/virtual-piano/assets/assets/85.mp3": {
+    "mtime": 1791404722.4379616,
+    "seen": 1791578701.0844944,
+    "ast_hash": "59eb23d0c4f43b43cedf5a1a485e1c9e",
+    "semantic_hash": "59eb23d0c4f43b43cedf5a1a485e1c9e"
+  },
+  "skills/featured/virtual-piano/assets/assets/86.mp3": {
+    "mtime": 1791404722.4379616,
+    "seen": 1791578701.0844946,
+    "ast_hash": "83a518fb4a1e6050148bcb17650c036b",
+    "semantic_hash": "83a518fb4a1e6050148bcb17650c036b"
+  },
+  "skills/featured/virtual-piano/assets/assets/87.mp3": {
+    "mtime": 1791404722.4389617,
+    "seen": 1791578701.084495,
+    "ast_hash": "cc07de6a928e154ec029a423ac7bd2b3",
+    "semantic_hash": "cc07de6a928e154ec029a423ac7bd2b3"
+  },
+  "skills/featured/virtual-piano/assets/assets/88.mp3": {
+    "mtime": 1791404722.4389617,
+    "seen": 1791578701.0844955,
+    "ast_hash": "b8a24d970a64937e74686360f764be8e",
+    "semantic_hash": "b8a24d970a64937e74686360f764be8e"
+  },
+  "skills/featured/virtual-piano/assets/assets/9.mp3": {
+    "mtime": 1791404722.4389617,
+    "seen": 1791578701.0844958,
+    "ast_hash": "b2efcf1c9a955a807161ee7c7e65fe71",
+    "semantic_hash": "b2efcf1c9a955a807161ee7c7e65fe71"
+  }
+}
