@@ -18,10 +18,10 @@ The server runs inside `PocketNodeService`, a foreground service built on Ktor C
 | Setting | Where | Default |
 |---|---|---|
 | API key (`Authorization: Bearer <key>`) | Pocket Node Server dialog, "API Key" field | Empty, so no authentication |
-| CORS (calls from browsers on other origins) | Dialog, "Permitir CORS" switch | Enabled |
-| Maximum body size | `MAX_BODY_BYTES` in `PocketNodeServer.kt` | 64 MB, then responds 413 |
+| CORS (calls from browsers on other origins) | Dialog, "Permitir CORS" switch | **Disabled** (turn it on only for browser clients, ideally with an API key) |
+| Maximum body size | `MAX_BODY_BYTES` in `PocketNodeServer.kt` | 20 MB, then responds 413. Enforced while reading, so chunked uploads without `Content-Length` and multipart audio files are capped too. |
 
-- Both settings are stored in `SharedPreferences` (`pocket_node_prefs`) and take effect when the server is **(re)started**.
+- Both settings are stored in `SharedPreferences` (`pocket_node_prefs`) and take effect when the server is **(re)started**. This file is excluded from cloud backup and device transfer (`backup_rules.xml`, `data_extraction_rules.xml`).
 - The key is compared in constant time (`MessageDigest.isEqual`).
 - **Recommendation:** set an API key whenever the phone is on a shared network. The server listens on `0.0.0.0:8080` and is reachable by any device on the LAN.
 - Remote image URLs (`http(s)://…`) are **never fetched**, which prevents SSRF. Only `data:` URIs with base64 content are accepted.
@@ -45,7 +45,9 @@ Lists the models in the allowlist. The non-standard field `downloaded` shows whe
   - `{"type":"input_audio","input_audio":{"data":"<base64>","format":"wav|mp3|..."}}`. Decoded to 16 kHz mono WAV with `AudioDecoderHelper`; requires a model with audio.
 - The last message must be `user` or `tool`. Several trailing `tool` messages (parallel calls) are sent together.
 - The API is **stateless**. Each request builds a new LiteRT-LM `Conversation` from the full history and closes it at the end, so the in-app chat conversation is not touched.
-  - If the engine does not allow a second conversation, the server borrows the UI conversation and recreates it afterwards.
+  - If the engine does not allow a second conversation, the server borrows the UI conversation. Afterwards it recreates it with its original system instruction, tools and constrained decoding (stored on `LlmModelInstance`), including when creating the request conversation fails. The UI chat history is lost from the model's context in that case.
+- Deltas are collected with an unbounded buffer, so no token or tool call is lost if the client reads slowly.
+- Model loading is serialized (`initMutex`), so two simultaneous first requests never load the model twice.
 - Requests are serialized per model with a mutex.
 
 **Parameters**
@@ -53,7 +55,7 @@ Lists the models in the allowlist. The non-standard field `downloaded` shows whe
 | Parameter | Support |
 |---|---|
 | `model` | Name from `/v1/models`, compared exactly first. If it does not exist, the model selected in the dialog is used, so clients that send `gpt-4o` keep working. The response always reports the real model. |
-| `temperature` (0–2), `top_p` (0–1], `top_k` (extension), `seed` | Mapped to `SamplerConfig`. If omitted, the model's configuration is used. NPU models ignore the sampler. |
+| `temperature` (0–2), `top_p` (0–1; `0` is clamped to 1e-6), `top_k` (extension), `seed` | Mapped to `SamplerConfig`. If omitted, the model's configuration is used. NPU models ignore the sampler. |
 | `max_completion_tokens` / `max_tokens` | Mapped to `maxOutputToken`. |
 | `stop` (string or up to 4) | Applied by the server, including in streaming. |
 | `stream`, `stream_options.include_usage` | SSE `text/event-stream`, `chat.completion.chunk` objects, ending with `data: [DONE]`. |
@@ -72,8 +74,8 @@ Lists the models in the allowlist. The non-standard field `downloaded` shows whe
   "usage": {"prompt_tokens": 12, "completion_tokens": 30, "total_tokens": 42, "estimated": true}
 }
 ```
-- `reasoning_content` comes from the LiteRT-LM `thought` channel, or from `<think>…</think>` blocks in the text, which are removed from `content`.
-- `finish_reason` is `stop`, `tool_calls` or `length`. `length` is only reported when the runtime gives exact token counts.
+- `reasoning_content` comes from the LiteRT-LM `thought` channel, or from `<think>…</think>` blocks in the text, which are removed from `content`. This also works in streaming, where tags can be split across deltas (`ThinkStreamSplitter`), and when the template pre-fills `<think>` so that only `…</think>` appears.
+- `finish_reason` is `stop`, `tool_calls` or `length`. `length` is reported when the completion tokens, exact or estimated, reach `max_completion_tokens`.
 - `usage`: exact counts when LiteRT-LM reports them (`BenchmarkInfo`). Otherwise it is estimated at about 4 characters per token and marked `"estimated": true`.
 
 ### `POST /v1/audio/transcriptions`
@@ -108,7 +110,7 @@ Every error uses the OpenAI format:
 | 400 | `invalid_request_error` | Invalid JSON, empty `messages`, out-of-range parameters, `n>1`, remote image URL (`code: unsupported_image_url`), unknown tool or `tool_call_id` |
 | 401 | `authentication_error` | Missing or wrong API key (`code: invalid_api_key`) |
 | 404 | `invalid_request_error` | `GET /v1/models/{id}` does not exist (`model_not_found`) |
-| 413 | `invalid_request_error` | Body over 64 MB |
+| 413 | `invalid_request_error` | Body over 20 MB |
 | 503 | `service_unavailable_error` | No model available, or not downloaded (`model_not_downloaded`), or failed to load (`model_load_failed`) |
 | 500 | `server_error` | Internal error |
 

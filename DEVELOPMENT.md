@@ -24,7 +24,7 @@ cd Android/src && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintD
 
 Notes:
 - AGP 9 rejects `minSdkVersion`/`targetSdkVersion` in `AndroidManifest.xml`; set them only in `app/build.gradle.kts`.
-- targetSdk 37 enforces edge-to-edge and the newer foreground-service rules. `PocketNodeService` uses `FOREGROUND_SERVICE_TYPE_DATA_SYNC`; verify long-running server sessions on a device (data-sync services have a daily time budget on recent Android versions).
+- targetSdk 37 enforces edge-to-edge and the newer foreground-service rules. `PocketNodeService` uses the `specialUse` foreground service type on API 34+ (no daily time limit; manifest property `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`) and `dataSync` on API 31–33, and implements `onTimeout()` to stop cleanly if a time-limited type expires.
 - Security scan: `trivy fs --scanners vuln,secret,misconfig .`. For Gradle dependencies, generate a temporary lockfile (init script with `dependencyLocking { lockAllConfigurations() }` + `./gradlew :app:dependencies --write-locks`), scan `app/gradle.lockfile`, then delete it. Last scan: no findings in app runtime dependencies; BouncyCastle 1.80.2 (CVE-2026-8763, CVE-2026-13506) is only pulled by the AGP lint tool (`androidLintTool`), not shipped in the APK.
 - OpenAI-compatible server API: see [docs/OPENAI_API.md](docs/OPENAI_API.md).
 

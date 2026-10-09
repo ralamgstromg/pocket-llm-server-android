@@ -50,7 +50,14 @@ import kotlinx.coroutines.CoroutineScope
 
 private const val TAG = "AGLlmChatModelHelper"
 
-data class LlmModelInstance(val engine: Engine, var conversation: Conversation)
+data class LlmModelInstance(
+  val engine: Engine,
+  var conversation: Conversation,
+  /** Configuration of the in-app conversation, used to recreate it after the API borrows it. */
+  var systemInstruction: Contents? = null,
+  var tools: List<ToolProvider> = emptyList(),
+  var enableConversationConstrainedDecoding: Boolean = false,
+)
 
 object LlmChatModelHelper : LlmModelHelper {
   // Indexed by model name.
@@ -196,7 +203,14 @@ object LlmChatModelHelper : LlmModelHelper {
           )
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
-      model.instance = LlmModelInstance(engine = engine, conversation = conversation)
+      model.instance =
+        LlmModelInstance(
+          engine = engine,
+          conversation = conversation,
+          systemInstruction = systemInstruction,
+          tools = tools,
+          enableConversationConstrainedDecoding = enableConversationConstrainedDecoding,
+        )
     } catch (e: Exception) {
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return
@@ -254,6 +268,9 @@ object LlmChatModelHelper : LlmModelHelper {
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
       instance.conversation = newConversation
+      instance.systemInstruction = systemInstruction
+      instance.tools = tools
+      instance.enableConversationConstrainedDecoding = enableConversationConstrainedDecoding
 
       Log.d(TAG, "Resetting done")
     } catch (e: Exception) {

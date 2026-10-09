@@ -83,7 +83,7 @@ object ChatRequestParser {
     if (req.messages.isEmpty()) invalid("'messages' must contain at least one message.", "messages")
     if (req.n != null && req.n != 1) invalid("Only n=1 is supported.", "n")
     req.temperature?.let { if (it < 0.0 || it > 2.0) invalid("'temperature' must be between 0 and 2.", "temperature") }
-    req.topP?.let { if (it <= 0.0 || it > 1.0) invalid("'top_p' must be in (0, 1].", "top_p") }
+    req.topP?.let { if (it < 0.0 || it > 1.0) invalid("'top_p' must be between 0 and 1.", "top_p") }
     req.topK?.let { if (it < 1) invalid("'top_k' must be >= 1.", "top_k") }
     val maxTokens = req.maxCompletionTokens ?: req.maxTokens
     maxTokens?.let {

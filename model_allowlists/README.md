@@ -87,5 +87,7 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 16. **OpenAI-Compatible REST API & Native Tool Calling** (`server/openai/*`, `PocketNodeServer.kt`) — full reference in [`docs/OPENAI_API.md`](../docs/OPENAI_API.md):
    - `/v1/chat/completions` now honours the full message history (stateless per-request LiteRT-LM `Conversation`), system/developer/tool roles, image/audio content parts, sampling parameters, `stop`, `response_format`, `reasoning_effort`, `usage` and SSE streaming.
    - Native tools via LiteRT-LM `OpenApiTool` with `automaticToolCalling=false`; `tool_calls` / `tool_choice` / `parallel_tool_calls`; tool results as `Content.ToolResponse`.
-   - New `/v1/models` endpoints, OpenAI error bodies, 64 MB body limit, optional API key and CORS toggle in the server dialog.
+   - New `/v1/models` endpoints, OpenAI error bodies, 20 MB body limit enforced while streaming the body, optional API key (excluded from backups) and CORS toggle (off by default) in the server dialog.
+   - Review hardening: think-tag splitting in streaming, restore of the in-app conversation configuration after a borrow, unbounded delta buffer, serialized model loading, `finish_reason: "length"` from estimated tokens, `top_p: 0` accepted.
+   - `PocketNodeService` now runs as a `specialUse` foreground service (API 34+) with `onTimeout()` handling.
    - `PocketNodeModelResolver.findModelByNameOrId` now prefers exact name/file matches.

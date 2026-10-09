@@ -18,6 +18,8 @@ import com.google.ai.edge.litertlm.OpenApiTool
 import com.google.ai.edge.litertlm.SamplerConfig
 import com.google.ai.edge.litertlm.ThinkingConfig
 import com.google.ai.edge.litertlm.tool
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.buffer
 
 private const val TAG = "PocketNodeChatEngine"
 
@@ -70,7 +72,9 @@ object ChatCompletionEngine {
       } else {
         SamplerConfig(
           topK = req.topK ?: model.getIntConfigValue(key = ConfigKeys.TOPK, defaultValue = DEFAULT_TOPK),
-          topP = req.topP ?: model.getFloatConfigValue(key = ConfigKeys.TOPP, defaultValue = DEFAULT_TOPP).toDouble(),
+          // top_p=0 (OpenAI "greedy") is clamped: the sampler needs a positive value.
+          topP = (req.topP ?: model.getFloatConfigValue(key = ConfigKeys.TOPP, defaultValue = DEFAULT_TOPP).toDouble())
+            .coerceAtLeast(1e-6),
           temperature =
             req.temperature
               ?: model.getFloatConfigValue(key = ConfigKeys.TEMPERATURE, defaultValue = DEFAULT_TEMPERATURE).toDouble(),
@@ -102,7 +106,7 @@ object ChatCompletionEngine {
     val message = LiteRtLmMapper.toMessage(req.current, decodeAudio)
 
     val constrained = req.tools.isNotEmpty() && req.toolChoice != ToolChoice.Auto
-    val (conversation, borrowedUiConversation) = openConversation(instance, config, constrained)
+    val (conversation, borrowedUiConversation) = openConversation(model, instance, config, constrained)
     try {
       conversation
         .sendMessageAsync(
@@ -115,6 +119,8 @@ object ChatCompletionEngine {
           thinking,
           responseFormat,
         )
+        // LiteRT-LM's callbackFlow uses trySend with a bounded buffer; never drop deltas.
+        .buffer(Channel.UNLIMITED)
         .collect { partial ->
           val out = LiteRtLmMapper.output(partial)
           if (out.text.isNotEmpty() || out.reasoning != null) onEvent(ChatEvent.Delta(out.text, out.reasoning))
@@ -126,17 +132,7 @@ object ChatCompletionEngine {
       throw e
     } finally {
       runCatching { conversation.close() }
-      if (borrowedUiConversation) {
-        // Give the in-app chat a fresh conversation again.
-        LlmChatModelHelper.resetConversation(
-          model = model,
-          supportImage = model.llmSupportImage,
-          supportAudio = model.llmSupportAudio,
-          systemInstruction = null,
-          tools = emptyList(),
-          enableConversationConstrainedDecoding = false,
-        )
-      }
+      if (borrowedUiConversation) restoreUiConversation(model, instance)
     }
   }
 
@@ -146,6 +142,7 @@ object ChatCompletionEngine {
    */
   @OptIn(ExperimentalApi::class)
   private fun openConversation(
+    model: Model,
     instance: LlmModelInstance,
     config: ConversationConfig,
     constrained: Boolean,
@@ -157,13 +154,32 @@ object ChatCompletionEngine {
           Pair(instance.engine.createConversation(config), false)
         } catch (e: Exception) {
           Log.w(TAG, "Could not open a parallel conversation (${e.message}); borrowing the UI conversation.")
+          runCatching { instance.conversation.cancelProcess() }
           runCatching { instance.conversation.close() }
-          Pair(instance.engine.createConversation(config), true)
+          try {
+            Pair(instance.engine.createConversation(config), true)
+          } catch (e2: Exception) {
+            restoreUiConversation(model, instance)
+            throw e2
+          }
         }
       } finally {
         ExperimentalFlags.enableConversationConstrainedDecoding = false
       }
     }
+  }
+
+  /** Recreates the in-app conversation with the configuration it had before it was borrowed. */
+  private fun restoreUiConversation(model: Model, instance: LlmModelInstance) {
+    Log.w(TAG, "Recreating the in-app conversation for '${model.name}' after an API request borrowed it.")
+    LlmChatModelHelper.resetConversation(
+      model = model,
+      supportImage = model.llmSupportImage,
+      supportAudio = model.llmSupportAudio,
+      systemInstruction = instance.systemInstruction,
+      tools = instance.tools,
+      enableConversationConstrainedDecoding = instance.enableConversationConstrainedDecoding,
+    )
   }
 
   @OptIn(ExperimentalApi::class)

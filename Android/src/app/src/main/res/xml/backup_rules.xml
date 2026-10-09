@@ -20,6 +20,8 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
+    <!-- Pocket Node server settings hold the API key; never back them up. -->
+    <exclude domain="sharedpref" path="pocket_node_prefs.xml"/>
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>

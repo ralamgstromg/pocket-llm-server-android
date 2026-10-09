@@ -34,7 +34,7 @@ object PocketNodeState {
     var apiKey: String = ""
 
     /** Whether browsers on other origins may call the API (CORS). */
-    var corsEnabled: Boolean = true
+    var corsEnabled: Boolean = false
 
     fun syncSharedModels() {
         if (activeChatModel != null && activeAudioModel != null && activeChatModel?.name == activeAudioModel?.name) {
@@ -51,7 +51,7 @@ object PocketNodeState {
         preferredChatModelName = prefs.getString(KEY_CHAT_MODEL, "") ?: ""
         preferredAudioModelName = prefs.getString(KEY_AUDIO_MODEL, "") ?: ""
         apiKey = prefs.getString(KEY_API_KEY, "") ?: ""
-        corsEnabled = prefs.getBoolean(KEY_CORS_ENABLED, true)
+        corsEnabled = prefs.getBoolean(KEY_CORS_ENABLED, false)
     }
 
     fun savePreferences(context: Context, chatModelName: String, audioModelName: String) {

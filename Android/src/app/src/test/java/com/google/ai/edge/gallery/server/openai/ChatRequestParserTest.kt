@@ -265,4 +265,10 @@ class ChatRequestParserTest {
       parse("""{"reasoning_effort":"high","messages":[{"role":"user","content":"x"}]}""").enableThinking!!
     )
   }
+
+  @Test
+  fun topPZeroIsAccepted() {
+    val req = parse("""{"top_p":0,"messages":[{"role":"user","content":"x"}]}""")
+    assertEquals(0.0, req.topP!!, 1e-12)
+  }
 }

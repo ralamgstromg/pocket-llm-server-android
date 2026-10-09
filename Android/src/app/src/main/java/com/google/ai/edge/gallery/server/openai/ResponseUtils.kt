@@ -91,6 +91,15 @@ object ResponseUtils {
 
   /** Moves inline `<think>...</think>` blocks out of the content. */
   fun splitThinking(text: String): Pair<String, String?> {
+    // A leading "...</think>" without an opener means the chat template pre-filled "<think>".
+    val close = text.indexOf("</think>")
+    val open = text.indexOf("<think>")
+    if (close >= 0 && (open < 0 || close < open)) {
+      val (rest, more) = splitThinking(text.substring(close + "</think>".length))
+      val lead = text.substring(0, close).trim()
+      val all = listOfNotNull(lead.ifEmpty { null }, more).joinToString("\n")
+      return Pair(rest.trimStart(), all.ifEmpty { null })
+    }
     val reasoning = THINK_REGEX.findAll(text).map { it.groupValues[1].trim() }.filter { it.isNotEmpty() }.toList()
     if (!text.contains("<think>")) return Pair(text, null)
     val content = THINK_REGEX.replace(text, "").trim()
@@ -156,6 +165,15 @@ object ResponseUtils {
     "data: ${OpenAiJson.encodeToString(ChatCompletionChunk.serializer(), chunk)}\n\n"
 
   const val SSE_DONE = "data: [DONE]\n\n"
+
+  /** OpenAI finish_reason; [completionTokens] may be an estimate. */
+  fun finishReason(hasToolCalls: Boolean, stopped: Boolean, maxTokens: Int?, completionTokens: Int): String =
+    when {
+      hasToolCalls -> "tool_calls"
+      stopped -> "stop"
+      maxTokens != null && completionTokens >= maxTokens -> "length"
+      else -> "stop"
+    }
 
   /** Rough token estimate (~4 characters per token) for when the runtime gives no counts. */
   fun estimateTokens(charCount: Int): Int = (charCount + 3) / 4

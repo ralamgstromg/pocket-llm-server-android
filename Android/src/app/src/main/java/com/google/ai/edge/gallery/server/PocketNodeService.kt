@@ -57,17 +57,27 @@ class PocketNodeService : Service() {
                 .build()
 
             // Tell the OS this service must not be killed while the screen is off
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
+            // specialUse has no daily runtime cap; dataSync (API 31-33) is capped on newer Android.
+            val fgsType =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                } else {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                }
+            startForeground(NOTIFICATION_ID, notification, fgsType)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start PocketNodeService foreground", e)
             PocketNodeState.isServerRunning = false
         }
 
         return START_STICKY
+    }
+
+    /** Called when a time-limited foreground service type runs out of time; stop cleanly. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service timeout (type $fgsType); stopping Pocket Node server.")
+        PocketNodeState.lastStartupError = "Android detuvo el servidor por límite de tiempo del servicio en primer plano."
+        stopSelf(startId)
     }
 
     override fun onDestroy() {

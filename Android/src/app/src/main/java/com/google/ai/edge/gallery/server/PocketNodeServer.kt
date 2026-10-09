@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.ai.edge.gallery.data.Model
 import com.google.ai.edge.gallery.server.openai.ApiKeyAuth
+import com.google.ai.edge.gallery.server.openai.BodyLimit
 import com.google.ai.edge.gallery.server.openai.ChatCompletionEngine
 import com.google.ai.edge.gallery.server.openai.ChatCompletionRequest
 import com.google.ai.edge.gallery.server.openai.ChatEvent
@@ -19,6 +20,7 @@ import com.google.ai.edge.gallery.server.openai.ParsedChatRequest
 import com.google.ai.edge.gallery.server.openai.ParsedToolCall
 import com.google.ai.edge.gallery.server.openai.ResponseUtils
 import com.google.ai.edge.gallery.server.openai.StopSequenceFilter
+import com.google.ai.edge.gallery.server.openai.ThinkStreamSplitter
 import com.google.ai.edge.gallery.server.openai.TokenCounts
 import com.google.ai.edge.gallery.server.openai.ToolCallTextParser
 import com.google.ai.edge.gallery.server.openai.TranscriptionResponse
@@ -39,7 +41,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.contentLength
-import io.ktor.server.request.receive
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
@@ -48,7 +50,6 @@ import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import io.ktor.utils.io.toByteArray
 import java.io.File
 import java.io.Writer
 import java.util.UUID
@@ -67,12 +68,15 @@ private const val TAG = "PocketNodeServer"
 private const val PORT = 8080
 
 /** Largest accepted request body (base64 images and audio included). */
-private const val MAX_BODY_BYTES = 64L * 1024 * 1024
+private const val MAX_BODY_BYTES = 20L * 1024 * 1024
 
 /** HTTP server exposing an OpenAI-compatible REST API on top of the on-device models. */
 class PocketNodeServer {
   private var server: EmbeddedServer<*, *>? = null
   private val serverMutexMap = ConcurrentHashMap<String, Mutex>()
+
+  /** Serializes model loading so concurrent first requests never load two engines. */
+  private val initMutex = Mutex()
 
   fun start(context: Context? = null) {
     if (server != null) return
@@ -178,7 +182,9 @@ class PocketNodeServer {
   // -------------------------------------------------------------------------------------------
 
   private suspend fun chatCompletions(call: ApplicationCall, context: Context?) {
-    val req = ChatRequestParser.parse(call.receive<ChatCompletionRequest>())
+    // Read with a hard cap: chunked uploads carry no Content-Length.
+    val body = BodyLimit.readLimited(call.receiveChannel(), MAX_BODY_BYTES).decodeToString()
+    val req = ChatRequestParser.parse(OpenAiJson.decodeFromString(ChatCompletionRequest.serializer(), body))
     val needsAudio = (req.history + req.current).any { it.audios.isNotEmpty() }
     val model = resolveAndInitModel(req.model, context, isAudio = needsAudio)
     val decodeAudio: (EncodedAudio) -> ByteArray = { audio ->
@@ -236,7 +242,7 @@ class PocketNodeServer {
       content = content,
       reasoning = allReasoning.ifEmpty { null },
       toolCalls = toolCalls,
-      finishReason = finishReason(req, toolCalls, stopFilter.stopped, counts),
+      finishReason = finishReason(req, toolCalls, stopFilter.stopped, counts, text.length),
       usage = usage(counts, req, text.length),
     )
   }
@@ -257,6 +263,7 @@ class PocketNodeServer {
     // With tools, content is held back until the end so text-encoded tool calls can be parsed.
     val bufferContent = req.tools.isNotEmpty()
     val stopFilter = StopSequenceFilter(req.stop)
+    val thinkSplitter = ThinkStreamSplitter(assumeThinkingFirst = req.enableThinking == true)
     val heldContent = StringBuilder()
     var producedChars = 0
     val nativeCalls = mutableListOf<Pair<String, String>>()
@@ -268,14 +275,18 @@ class PocketNodeServer {
           when (event) {
             is ChatEvent.Delta -> {
               producedChars += event.text.length
-              event.reasoning?.takeIf { it.isNotEmpty() }?.let { send(ChunkDelta(reasoningContent = it)) }
-              val visible = stopFilter.feed(event.text)
+              val (text, inlineReasoning) = thinkSplitter.feed(event.text)
+              val reasoningDelta = (event.reasoning.orEmpty() + inlineReasoning)
+              if (reasoningDelta.isNotEmpty()) send(ChunkDelta(reasoningContent = reasoningDelta))
+              val visible = stopFilter.feed(text)
               if (bufferContent) heldContent.append(visible) else if (visible.isNotEmpty()) send(ChunkDelta(content = visible))
             }
             is ChatEvent.ToolCalls -> nativeCalls.addAll(event.calls)
           }
         }
-      val tail = stopFilter.flush()
+      val (thinkTail, reasoningTail) = thinkSplitter.flush()
+      if (reasoningTail.isNotEmpty()) send(ChunkDelta(reasoningContent = reasoningTail))
+      val tail = stopFilter.feed(thinkTail) + stopFilter.flush()
       var toolCalls = emptyList<ParsedToolCall>()
       if (bufferContent) {
         heldContent.append(tail)
@@ -286,7 +297,7 @@ class PocketNodeServer {
       } else if (tail.isNotEmpty()) {
         send(ChunkDelta(content = tail))
       }
-      send(ChunkDelta(), finishReason = finishReason(req, toolCalls, stopFilter.stopped, counts))
+      send(ChunkDelta(), finishReason = finishReason(req, toolCalls, stopFilter.stopped, counts, producedChars))
       if (req.includeUsage) send(ChunkDelta(), usage = usage(counts, req, producedChars))
     } catch (e: OpenAiException) {
       writer.write("data: ${OpenAiJson.encodeToString(ErrorResponse.serializer(), e.toResponse())}\n\n")
@@ -317,13 +328,19 @@ class PocketNodeServer {
 
   private fun newCallId() = "call_${UUID.randomUUID().toString().replace("-", "").take(24)}"
 
-  private fun finishReason(req: ParsedChatRequest, toolCalls: List<ParsedToolCall>, stopped: Boolean, counts: TokenCounts): String =
-    when {
-      toolCalls.isNotEmpty() -> "tool_calls"
-      stopped -> "stop"
-      req.maxTokens != null && counts.completion != null && counts.completion >= req.maxTokens -> "length"
-      else -> "stop"
-    }
+  private fun finishReason(
+    req: ParsedChatRequest,
+    toolCalls: List<ParsedToolCall>,
+    stopped: Boolean,
+    counts: TokenCounts,
+    completionChars: Int,
+  ): String =
+    ResponseUtils.finishReason(
+      hasToolCalls = toolCalls.isNotEmpty(),
+      stopped = stopped,
+      maxTokens = req.maxTokens,
+      completionTokens = counts.completion ?: ResponseUtils.estimateTokens(completionChars),
+    )
 
   private fun usage(counts: TokenCounts, req: ParsedChatRequest, completionChars: Int): Usage {
     val promptChars = (req.history + req.current).sumOf { it.text.length } + (req.systemPrompt?.length ?: 0)
@@ -347,7 +364,7 @@ class PocketNodeServer {
     try {
       call.receiveMultipart(formFieldLimit = MAX_BODY_BYTES).forEachPart { part ->
         when (part) {
-          is PartData.FileItem -> rawAudioBytes = part.provider().toByteArray()
+          is PartData.FileItem -> rawAudioBytes = BodyLimit.readLimited(part.provider(), MAX_BODY_BYTES)
           is PartData.FormItem ->
             when (part.name) {
               "model" -> modelParam = part.value
@@ -359,6 +376,8 @@ class PocketNodeServer {
         }
         part.release()
       }
+    } catch (e: OpenAiException) {
+      throw e
     } catch (e: Exception) {
       throw OpenAiException(400, "Error parsing multipart audio request: ${e.message}")
     }
@@ -437,7 +456,8 @@ class PocketNodeServer {
       throw OpenAiException(503, "No active model available. Please select a model in Pocket Node Server.", code = "model_unavailable")
     }
 
-    if (model.instance == null && context != null) {
+    if (model.instance == null && context != null) initMutex.withLock {
+      if (model.instance != null) return@withLock
       val modelFile = File(model.getPath(context))
       if (!modelFile.exists() || modelFile.length() == 0L) {
         throw OpenAiException(

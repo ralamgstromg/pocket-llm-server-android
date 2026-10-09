@@ -166,4 +166,61 @@ class ResponseUtilsTest {
     assertFalse(ApiKeyAuth.isAuthorized(header = null, configuredKey = "s3cret"))
     assertFalse(ApiKeyAuth.isAuthorized(header = "s3cret", configuredKey = "s3cret"))
   }
+
+  @Test
+  fun splitThinkingTreatsLeadingOrphanCloseTagAsReasoning() {
+    val (content, reasoning) = ResponseUtils.splitThinking("step one\n</think>\n\nAnswer")
+    assertEquals("Answer", content)
+    assertEquals("step one", reasoning)
+  }
+
+  private fun runSplitter(s: ThinkStreamSplitter, deltas: List<String>): Pair<String, String> {
+    val c = StringBuilder()
+    val r = StringBuilder()
+    for (d in deltas) {
+      val (a, b) = s.feed(d)
+      c.append(a)
+      r.append(b)
+    }
+    val (a, b) = s.flush()
+    c.append(a)
+    r.append(b)
+    return Pair(c.toString(), r.toString())
+  }
+
+  @Test
+  fun thinkSplitterHandlesTagsSplitAcrossDeltas() {
+    val (content, reasoning) = runSplitter(ThinkStreamSplitter(assumeThinkingFirst = false), listOf("<thi", "nk>abc</th", "ink>Hello", " world"))
+    assertEquals("Hello world", content)
+    assertEquals("abc", reasoning)
+  }
+
+  @Test
+  fun thinkSplitterPassesPlainTextThrough() {
+    val s = ThinkStreamSplitter(assumeThinkingFirst = false)
+    assertEquals(Pair("Hi there", ""), s.feed("Hi there"))
+  }
+
+  @Test
+  fun thinkSplitterAssumeThinkingFirstRoutesTextBeforeCloseTagToReasoning() {
+    val (content, reasoning) = runSplitter(ThinkStreamSplitter(assumeThinkingFirst = true), listOf("let me ", "think</think>", "\n\nAnswer"))
+    assertEquals("Answer", content.trim())
+    assertEquals("let me think", reasoning.trim())
+  }
+
+  @Test
+  fun thinkSplitterAssumeThinkingFirstWithoutCloseTagReturnsContent() {
+    val (content, reasoning) = runSplitter(ThinkStreamSplitter(assumeThinkingFirst = true), listOf("plain ", "answer"))
+    assertEquals("plain answer", content)
+    assertEquals("", reasoning)
+  }
+
+  @Test
+  fun finishReasonReportsLengthFromEstimatedTokens() {
+    assertEquals("length", ResponseUtils.finishReason(hasToolCalls = false, stopped = false, maxTokens = 10, completionTokens = 10))
+    assertEquals("stop", ResponseUtils.finishReason(hasToolCalls = false, stopped = false, maxTokens = 10, completionTokens = 9))
+    assertEquals("stop", ResponseUtils.finishReason(hasToolCalls = false, stopped = true, maxTokens = 10, completionTokens = 50))
+    assertEquals("tool_calls", ResponseUtils.finishReason(hasToolCalls = true, stopped = false, maxTokens = 1, completionTokens = 5))
+    assertEquals("stop", ResponseUtils.finishReason(hasToolCalls = false, stopped = false, maxTokens = null, completionTokens = 5))
+  }
 }
