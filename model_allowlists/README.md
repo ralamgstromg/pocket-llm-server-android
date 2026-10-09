@@ -18,6 +18,7 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
 | **Gemma3-270M-IT** | `litert-community/gemma-3-270m-it` | `gemma3-270m-it-q8.litertlm` | 304,005,120 | 4 GB | `9d2093270fb5aa49a986b49b5779d763dde7b630` |
 | **Qwen2.5-1.5B-Instruct** | `litert-community/Qwen2.5-1.5B-Instruct` | `Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm` | 1,597,931,520 | 6 GB | `19edb84c69a0212f29a6ef17ba0d6f278b6a1614` |
 | **Qwen3-0.6B** | `litert-community/Qwen3-0.6B` | `qwen3_0_6b_mixed_int4.litertlm` | 497,664,000 | 6 GB | `8414150f2e9dcc82449bcc9c5abc404b399a4d06` |
+| **Qwen3.5-4B** | `litert-community/Qwen3.5-4B` | `Qwen3.5-4B_mixed_int4.litertlm` | 2,754,365,536 | 8 GB | `1f89ed8a25015aa8a488db473901b05a9e1aa3d1` |
 | **DeepSeek-R1-Distill-Qwen-1.5B** | `litert-community/DeepSeek-R1-Distill-Qwen-1.5B` | `DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv4096.litertlm` | 1,833,451,520 | 6 GB | `2f8b8ee90d8f93b15305b699e8772b277d074a9a` |
 | **LFM2.5-1.2B-Instruct** | `litert-community/LFM2.5-1.2B-Instruct` | `LFM2.5-1.2B-Instruct_int4.litertlm` | 736,015,744 | 6 GB | `82dd33e3afbdc92853293212a08d5aaa6d466c85` |
 | **Phi-4-mini-instruct** | `litert-community/Phi-4-mini-instruct` | `Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm` | 3,910,090,752 | 8 GB | `8cd368be75fdb94d5a6f6f5b40f1ab22a6c2543e` |
@@ -70,3 +71,21 @@ The active allowlist only supports model files in the `.litertlm` format, optimi
    - Fixed Android 14+ (`API 34/35`) Foreground Service type crash by passing `ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC` to `startForeground(...)`.
    - Wrapped Ktor `embeddedServer(CIO, port = 8080)` startup in `try-catch` to capture socket/port bind exceptions safely, recording `PocketNodeState.lastStartupError`.
    - Added `LaunchedEffect(PocketNodeState.lastStartupError)` in `PocketNodeServerDialog.kt` to display exact error details in `statusMessage` with `❌` icon instead of crashing the app.
+14. **Qwen3.5-4B (Mixed INT4) Model**:
+   - Added `Qwen3.5-4B` (`litert-community/Qwen3.5-4B`, file `Qwen3.5-4B_mixed_int4.litertlm`, commit `1f89ed8a`) to `1_0_11.json` and to the bundled asset copy (both files are byte-identical).
+   - Hybrid GatedDeltaNet architecture, **text only** (no vision/audio), 4096-token context, thinking switch (`llmSupportThinking: true`, reasoning returned on the `thought` channel, off by default).
+   - Defaults: `topK 20`, `topP 0.8`, `temperature 0.7`, `maxTokens 4096`, `accelerators "cpu,gpu"`. The model card recommends the **CPU backend on 8 GB phones** (measured ~4.4 GB peak on a Pixel 8a) and has not verified GPU on Qualcomm Adreno.
+   - Requires **LiteRT-LM >= 0.15**, which is why the runtime was upgraded to 0.18.0 (see item 15).
+   - Its bundle declares `supports_function_calling=false`: tool calls come back as `<tool_call>` text and are parsed by the server fallback (see item 16).
+15. **Toolchain & Library Upgrade**:
+   - Gradle 9.8.1, AGP 9.4.1 (built-in Kotlin: the `org.jetbrains.kotlin.android` plugin was removed), Kotlin 2.4.21, KSP 2.3.12; Hilt moved from `kapt` to KSP.
+   - JDK 27 toolchain; Java/Kotlin bytecode target 25 (Kotlin 2.4.21 supports at most `JVM_26`).
+   - compileSdk/targetSdk 37; removed the `<uses-sdk>` element from `AndroidManifest.xml` (rejected by AGP 9).
+   - All catalog libraries at their latest stable version (LiteRT-LM 0.18.0, Ktor 3.6.0, Compose BOM 2026.09.00, Hilt 2.60.1, Firebase BoM 35.0.0, CameraX 1.6.2, protobuf 4.36.2, ...).
+   - Fixed new Compose lint errors (`NonObservableLocale` in benchmark viewers, unused `AnimatedContent` target state in Mobile Actions).
+   - CI (`.github/workflows/build_android.yaml`): JDK 27, `actions/checkout@v7`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v6`.
+16. **OpenAI-Compatible REST API & Native Tool Calling** (`server/openai/*`, `PocketNodeServer.kt`) — full reference in [`docs/OPENAI_API.md`](../docs/OPENAI_API.md):
+   - `/v1/chat/completions` now honours the full message history (stateless per-request LiteRT-LM `Conversation`), system/developer/tool roles, image/audio content parts, sampling parameters, `stop`, `response_format`, `reasoning_effort`, `usage` and SSE streaming.
+   - Native tools via LiteRT-LM `OpenApiTool` with `automaticToolCalling=false`; `tool_calls` / `tool_choice` / `parallel_tool_calls`; tool results as `Content.ToolResponse`.
+   - New `/v1/models` endpoints, OpenAI error bodies, 64 MB body limit, optional API key and CORS toggle in the server dialog.
+   - `PocketNodeModelResolver.findModelByNameOrId` now prefers exact name/file matches.

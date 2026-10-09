@@ -11,9 +11,12 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 
 ## 🚀 The Power of Pocket Node
 
-*   **API on the Go**: Pocket Node exposes background network services on `http://YOUR_PHONE_IP:8080`:
-    *   `POST /v1/chat/completions`: Text generation / chat completions.
+*   **OpenAI-compatible API on the Go**: Pocket Node exposes an OpenAI-compatible REST API on `http://YOUR_PHONE_IP:8080/v1` (full reference: **[docs/OPENAI_API.md](docs/OPENAI_API.md)**):
+    *   `GET /v1/models`, `GET /v1/models/{id}`: List the available on-device models (with download status).
+    *   `POST /v1/chat/completions`: Multi-turn chat with system/developer/user/assistant/tool roles, images and audio as content parts, sampling parameters, `stop`, `response_format` (JSON / JSON Schema), reasoning (`reasoning_content`), `usage` and **SSE streaming**.
+    *   **Native tool calling**: OpenAI `tools` / `tool_choice` / `tool_calls` mapped to LiteRT-LM 0.18 `OpenApiTool` (plus a `<tool_call>` text fallback for generic models).
     *   `POST /v1/audio/transcriptions`: Speech-to-Text (STT) audio transcription compatible with OpenAI.
+    *   Optional **API key** (`Authorization: Bearer`) and CORS toggle, OpenAI-style error bodies.
 *   **Interactive Model Configuration UI**: Select your desired active models directly in the app before starting the HTTP server:
     *   **Chat / Completions Model**: Dedicated model selector for text generation.
     *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
@@ -35,6 +38,17 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
    - Choose your **Audio STT Model**.
    - Tap **Iniciar Servidor HTTP** to ignite the background service!
 4. **Test it out**:
+   - **List models**:
+     ```bash
+     curl http://<YOUR_PHONE_IP>:8080/v1/models
+     ```
+   - **Any OpenAI SDK** (Python shown; streaming and tools work too):
+     ```python
+     from openai import OpenAI
+     client = OpenAI(base_url="http://<YOUR_PHONE_IP>:8080/v1", api_key="<your key or anything>")
+     r = client.chat.completions.create(model="Qwen3.5-4B", messages=[{"role": "user", "content": "Hola!"}])
+     print(r.choices[0].message.content)
+     ```
    - **Text Completion**:
      ```bash
      curl http://<YOUR_PHONE_IP>:8080/v1/chat/completions \
@@ -63,13 +77,14 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 ## 🛠️ Compiling & Building the APK (CLI)
 
 ### Requirements
-- **JDK 21** (e.g. OpenJDK 21 at `/home/rcastro/.jdks/jdk-21.0.6+7`). Java 21 is required for compatibility with `LiteRT-LM` class bytecode.
-- **Android SDK** (configured in `Android/src/local.properties`).
+- **JDK 27** (Temurin 27). Gradle 9.8.1 runs on it; the app bytecode targets Java 25 (the highest target supported by Kotlin 2.4.21). Example: `mise use -g java@temurin-27`.
+- **Android SDK** with `platforms;android-37.0` and `build-tools;37.0.0` (configured in `Android/src/local.properties`).
+- Toolchain versions: Gradle 9.8.1, AGP 9.4.1 (built-in Kotlin), Kotlin 2.4.21, KSP 2.3.12, compileSdk/targetSdk 37, minSdk 31, LiteRT-LM 0.18.0. See [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### 1. Configure SDK Path
 Ensure `Android/src/local.properties` contains your Android SDK location:
 ```properties
-sdk.dir=/home/rcastro/android-sdk
+sdk.dir=/home/<you>/Android/Sdk
 ```
 
 *Note: All `./gradlew` commands must be executed from the `Android/src` directory (from the repo root run `cd Android/src`, or if you are inside `Android/` run `cd src`).*
@@ -78,7 +93,7 @@ sdk.dir=/home/rcastro/android-sdk
 To build the debug APK:
 ```bash
 cd Android/src
-JAVA_HOME=/home/rcastro/.jdks/jdk-21.0.6+7 ./gradlew assembleDebug
+JAVA_HOME=$(mise where java@temurin-27) ./gradlew assembleDebug
 ```
 The output APK will be generated at:
 `Android/src/app/build/outputs/apk/debug/app-debug.apk`
@@ -87,10 +102,17 @@ The output APK will be generated at:
 To build the release APK:
 ```bash
 cd Android/src
-JAVA_HOME=/home/rcastro/.jdks/jdk-21.0.6+7 ./gradlew assembleRelease
+JAVA_HOME=$(mise where java@temurin-27) ./gradlew assembleRelease
 ```
 The output APK will be generated at:
 `Android/src/app/build/outputs/apk/release/app-release.apk`
+
+### 4. Tests & Lint
+```bash
+cd Android/src
+./gradlew :app:testDebugUnitTest   # OpenAI API parser/mapper unit tests
+./gradlew :app:lintDebug
+```
 
 ---
 
