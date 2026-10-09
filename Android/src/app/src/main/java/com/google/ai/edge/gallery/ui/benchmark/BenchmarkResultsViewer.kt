@@ -105,7 +105,7 @@ import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 import com.google.ai.edge.gallery.ui.theme.customColors
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -346,7 +346,7 @@ fun BenchmarkResultsViewer(
                       Accordions(
                         title = "$modelName · ${llmResult.baiscInfo.accelerator}",
                         subtitle =
-                          SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                          SimpleDateFormat("yyyy-MM-dd HH:mm:ss", LocalConfiguration.current.locales[0])
                             .format(Date(llmResult.baiscInfo.startMs)),
                         boldTitle = true,
                         expanded = result.expanded,
@@ -557,7 +557,7 @@ fun BenchmarkResultsViewer(
                                 label = "First init time",
                                 value =
                                   String.format(
-                                    Locale.getDefault(),
+                                    LocalConfiguration.current.locales[0],
                                     "%.2f",
                                     llmResult.stats.firstInitTimeMs,
                                   ),
@@ -808,7 +808,7 @@ private fun StatRow(
           if (curBaselineValue != null) {
             val doubleValue = value.toDouble()
             val pct = (doubleValue - curBaselineValue) / curBaselineValue * 100
-            val strPct = String.format(Locale.getDefault(), "%.1f", abs(pct))
+            val strPct = String.format(LocalConfiguration.current.locales[0], "%.1f", abs(pct))
             val sign = if (pct >= 0.0) "+" else "-"
             val betterSign = if (lessIsBetter) "-" else "+"
             val color =
@@ -898,7 +898,7 @@ private fun ValueSeriesRow(
           }
         AnimatedContent(value) { curValue ->
           Text(
-            String.format(Locale.getDefault(), "%.2f", curValue),
+            String.format(LocalConfiguration.current.locales[0], "%.2f", curValue),
             style = MaterialTheme.typography.labelMedium,
             color = textColor,
             maxLines = 1,
@@ -913,7 +913,7 @@ private fun ValueSeriesRow(
         ) { curBaselineValue ->
           if (curBaselineValue != null && abs(curBaselineValue) > 1e-6) {
             val pct = (value - curBaselineValue) / curBaselineValue * 100
-            val strPct = String.format(Locale.getDefault(), "%.1f", abs(pct))
+            val strPct = String.format(LocalConfiguration.current.locales[0], "%.1f", abs(pct))
             val sign = if (pct >= 0.0) "+" else "-"
             val betterSign = if (lessIsBetter) "-" else "+"
             val color =

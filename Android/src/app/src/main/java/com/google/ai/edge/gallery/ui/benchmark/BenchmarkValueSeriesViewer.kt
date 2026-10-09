@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.google.ai.edge.gallery.R
 import com.google.ai.edge.gallery.proto.ValueSeries
 import com.google.ai.edge.gallery.ui.theme.customColors
-import java.util.Locale
+import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +87,7 @@ fun BenchmarkValueSeriesViewer(title: String, valueSeries: ValueSeries, onDismis
             if (tappedValue == null) {
               stringResource(R.string.tap_to_see_value)
             } else {
-              "Value: ${String.format(Locale.getDefault(), "%.2f", tappedValue)}"
+              "Value: ${String.format(LocalConfiguration.current.locales[0], "%.2f", tappedValue)}"
             },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -205,7 +205,7 @@ fun BenchmarkValueSeriesViewer(title: String, valueSeries: ValueSeries, onDismis
 private fun StatCell(key: String, value: Double) {
   Column() {
     Text(
-      String.format(Locale.getDefault(), "%.2f", value),
+      String.format(LocalConfiguration.current.locales[0], "%.2f", value),
       style = MaterialTheme.typography.labelMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       maxLines = 1,
