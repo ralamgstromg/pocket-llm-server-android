@@ -14,6 +14,8 @@ import com.google.ai.edge.gallery.server.openai.EncodedAudio
 import com.google.ai.edge.gallery.server.openai.ErrorResponse
 import com.google.ai.edge.gallery.server.openai.ModelList
 import com.google.ai.edge.gallery.server.openai.ModelObject
+import com.google.ai.edge.gallery.server.openai.SkillList
+import com.google.ai.edge.gallery.server.openai.SkillObject
 import com.google.ai.edge.gallery.server.openai.OpenAiException
 import com.google.ai.edge.gallery.server.openai.OpenAiJson
 import com.google.ai.edge.gallery.server.openai.ParsedChatRequest
@@ -118,6 +120,8 @@ class PocketNodeServer {
               post("/v1/chat/completions") { handle(call, apiKey) { chatCompletions(call, context) } }
 
               post("/v1/audio/transcriptions") { handle(call, apiKey) { transcriptions(call, context) } }
+
+              get("/v1/skills") { handle(call, apiKey) { call.respond(SkillList(data = listSkills(context))) } }
             }
           }
         server = newServer.start(wait = false)
@@ -163,6 +167,31 @@ class PocketNodeServer {
   // -------------------------------------------------------------------------------------------
   // /v1/models
   // -------------------------------------------------------------------------------------------
+
+  private fun listSkills(context: Context?): List<SkillObject> {
+    if (context == null) return emptyList()
+    val list = mutableListOf<SkillObject>()
+    try {
+      val pbFile = File(context.filesDir, "datastore/skills.pb")
+      if (pbFile.exists()) {
+        val skills = pbFile.inputStream().use { com.google.ai.edge.gallery.proto.Skills.parseFrom(it) }
+        for (s in skills.skillList) {
+          list.add(
+            SkillObject(
+              id = s.name,
+              name = s.name,
+              description = s.description ?: "",
+              selected = s.selected,
+              builtIn = s.builtIn,
+            )
+          )
+        }
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed reading skills for /v1/skills: ${e.message}")
+    }
+    return list
+  }
 
   private fun listModels(context: Context?): List<ModelObject> {
     if (context == null) return emptyList()

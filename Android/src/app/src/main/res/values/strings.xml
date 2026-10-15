@@ -401,4 +401,11 @@
   <!-- Content description spoken when the "menu" icon is focused. [CHAR_LIMIT=NONE] -->
   <string name="cd_menu">Menu</string>
 
+
+  <!-- Strings for skill sorting -->
+  <string name="sort_skills">Sort skills</string>
+  <string name="skill_sort_default">Default</string>
+  <string name="skill_sort_name_asc">Name (A-Z)</string>
+  <string name="skill_sort_name_desc">Name (Z-A)</string>
+  <string name="skill_sort_enabled_first">Enabled first</string>
 </resources>

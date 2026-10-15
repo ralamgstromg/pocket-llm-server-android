@@ -161,6 +161,22 @@ data class ModelObject(
 @Serializable
 data class ModelList(@EncodeDefault val `object`: String = "list", val data: List<ModelObject>)
 
+@Serializable
+data class SkillObject(
+  val id: String,
+  val name: String,
+  val description: String,
+  val selected: Boolean,
+  val builtIn: Boolean,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class SkillList(
+  @EncodeDefault val `object`: String = "list",
+  val data: List<SkillObject>,
+)
+
 @Serializable data class TranscriptionResponse(val text: String)
 
 @Serializable data class ErrorResponse(val error: ErrorDetail)

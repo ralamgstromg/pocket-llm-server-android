@@ -48,6 +48,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFolderUpload
@@ -115,6 +119,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private enum class SkillSortOrder(@StringRes val titleResId: Int) {
+  DEFAULT(R.string.skill_sort_default),
+  NAME_ASC(R.string.skill_sort_name_asc),
+  NAME_DESC(R.string.skill_sort_name_desc),
+  ENABLED_FIRST(R.string.skill_sort_enabled_first),
+}
+
 private enum class AddSkillOptionType {
   FeaturedList,
   RemoteUrl,
@@ -177,6 +188,8 @@ fun SkillManagerBottomSheet(
   var filteredSkills by remember { mutableStateOf(uiState.skills) }
   val listState = rememberLazyListState()
   val uriHandler = LocalUriHandler.current
+  var sortOrder by remember { mutableStateOf(SkillSortOrder.DEFAULT) }
+  var showSortMenu by remember { mutableStateOf(false) }
 
   // Additional states for multi-select and section collapsing
   var hasDeterminedExpansionStates by remember { mutableStateOf(false) }
@@ -204,7 +217,7 @@ fun SkillManagerBottomSheet(
     }
   }
 
-  LaunchedEffect(uiState.skills, searchQuery, uiState.loading) {
+  LaunchedEffect(uiState.skills, searchQuery, uiState.loading, sortOrder) {
     if (!uiState.loading && !hasDeterminedExpansionStates) {
       val hasCustomSkills = uiState.skills.any { !it.skill.builtIn }
       isBuiltInExpanded = !hasCustomSkills
@@ -212,7 +225,7 @@ fun SkillManagerBottomSheet(
     }
 
     val trimmedQuery = searchQuery.trim().lowercase()
-    filteredSkills =
+    val searched =
       if (trimmedQuery.isBlank()) {
         uiState.skills
       } else {
@@ -221,6 +234,17 @@ fun SkillManagerBottomSheet(
           (skill.name?.lowercase()?.contains(trimmedQuery) == true) ||
             (skill.description?.lowercase()?.contains(trimmedQuery) == true)
         }
+      }
+
+    filteredSkills =
+      when (sortOrder) {
+        SkillSortOrder.DEFAULT -> searched
+        SkillSortOrder.NAME_ASC -> searched.sortedBy { it.skill.name.lowercase() }
+        SkillSortOrder.NAME_DESC -> searched.sortedByDescending { it.skill.name.lowercase() }
+        SkillSortOrder.ENABLED_FIRST ->
+          searched.sortedWith(
+            compareByDescending<SkillState> { it.skill.selected }.thenBy { it.skill.name.lowercase() }
+          )
       }
 
     if (searchQuery != previousSearchQuery) {
@@ -404,15 +428,59 @@ fun SkillManagerBottomSheet(
               verticalAlignment = Alignment.CenterVertically,
               modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             ) {
-              // Skill count.
-              Text(
-                pluralStringResource(
-                  R.plurals.skills_count,
-                  uiState.skills.size,
-                  uiState.skills.size,
-                ),
-                style = MaterialTheme.typography.labelLarge,
-              )
+              // Skill count and sort options.
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                  pluralStringResource(
+                    R.plurals.skills_count,
+                    uiState.skills.size,
+                    uiState.skills.size,
+                  ),
+                  style = MaterialTheme.typography.labelLarge,
+                )
+                Box {
+                  IconButton(
+                    onClick = { showSortMenu = true },
+                    modifier = Modifier.size(32.dp).padding(start = 4.dp),
+                  ) {
+                    Icon(
+                      Icons.AutoMirrored.Rounded.Sort,
+                      contentDescription = stringResource(R.string.sort_skills),
+                      tint =
+                        if (sortOrder != SkillSortOrder.DEFAULT) {
+                          MaterialTheme.colorScheme.primary
+                        } else {
+                          MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                      modifier = Modifier.size(18.dp),
+                    )
+                  }
+                  DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                  ) {
+                    SkillSortOrder.entries.forEach { order ->
+                      DropdownMenuItem(
+                        text = { Text(stringResource(order.titleResId)) },
+                        onClick = {
+                          sortOrder = order
+                          showSortMenu = false
+                        },
+                        leadingIcon =
+                          if (sortOrder == order) {
+                            {
+                              Icon(
+                                Icons.Rounded.Done,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                              )
+                            }
+                          } else null,
+                      )
+                    }
+                  }
+                }
+              }
 
               // Select all / Deselect all.
               Row(verticalAlignment = Alignment.CenterVertically) {
