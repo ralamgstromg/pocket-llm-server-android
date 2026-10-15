@@ -221,7 +221,7 @@ fun HomeScreen(
     var showServerDialog by rememberSaveable { mutableStateOf(false) }
 
     if (showServerDialog) {
-      com.google.ai.edge.gallery.server.PocketNodeServerDialog(
+      com.google.ai.edge.gallery.server.PocketNodeServerScreen(
         modelManagerViewModel = modelManagerViewModel,
         onDismissRequest = { showServerDialog = false }
       )

@@ -12,19 +12,26 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 ## 🚀 The Power of Pocket Node
 
 *   **OpenAI-compatible API on the Go**: Pocket Node exposes an OpenAI-compatible REST API on `http://YOUR_PHONE_IP:8080/v1` (full reference: **[docs/OPENAI_API.md](docs/OPENAI_API.md)**):
-    *   `GET /v1/models`, `GET /v1/models/{id}`: List the available on-device models (with download status).
-    *   `POST /v1/chat/completions`: Multi-turn chat with system/developer/user/assistant/tool roles, images and audio as content parts, sampling parameters, `stop`, `response_format` (JSON / JSON Schema), reasoning (`reasoning_content`), `usage` and **SSE streaming**.
-    *   **Native tool calling**: OpenAI `tools` / `tool_choice` / `tool_calls` mapped to LiteRT-LM 0.18 `OpenApiTool` (plus a `<tool_call>` text fallback for generic models).
-    *   `POST /v1/audio/transcriptions`: Speech-to-Text (STT) audio transcription compatible with OpenAI.
-    *   Optional **API key** (`Authorization: Bearer`) and CORS toggle, OpenAI-style error bodies.
-*   **Interactive Model Configuration UI**: Select your desired active models directly in the app before starting the HTTP server:
-    *   **Chat / Completions Model**: Dedicated model selector for text generation.
-    *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
-    *   **Persistent Preferences**: Model choices are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
+    *   `GET /v1/models`, `GET /v1/models/{id}`: List the available on-device models (with download status, capabilities, and assigned roles).
+    *   `POST /v1/chat/completions`: Multi-turn chat with system/developer/user/assistant/tool roles, images and audio as content parts, sampling parameters, `stop`, `n`, `response_format` (JSON / JSON Schema), reasoning (`reasoning_content`), `usage` and **SSE streaming**.
+    *   `POST /v1/completions` (legacy) and `POST /v1/responses` (with streaming events).
+    *   **Universal Tool Calling**: OpenAI `tools` / `tool_choice` / `tool_calls` with arguments always parsed and validated as standard JSON objects regardless of model (supports native LiteRT-LM, Hermes `<tool_call>`, Mistral `[TOOL_CALLS]`, Liquid Pythonic `<|tool_call_start|>`, Granite, and Markdown JSON).
+    *   **On-Device Skills as Tools**: Pass `"x_pocket_skills": true` in chat requests to automatically expose and execute installed Android skills (e.g. hash calculation, map, wiki) inside a headless sandboxed WebView loop.
+    *   `POST /v1/audio/transcriptions` and `/v1/audio/translations`: Speech-to-text with Spanish support via **Qwen3-ASR-1.7B** (`.litertlm`) and multi-format audio decoding.
+    *   `POST /v1/audio/speech` & `GET /v1/audio/voices`: Text-to-speech through Android system voices (WAV output), with Spanish priority.
+    *   Optional **API key** (`Authorization: Bearer`, stored encrypted with Keystore), CORS toggle, OpenAI-style error bodies.
+*   **Curated Hugging Face Catalog (`litert-community`)**: Bundles `.litertlm` models with Spanish language tags and recommended roles:
+    *   **STT**: `Qwen3-ASR-1.7B` (30s & 15s), `Parakeet-TDT-0.6B-v3`.
+    *   **Chat & Tools**: `Qwen3.5-4B`, `Qwen3.5-2B`, `Qwen3-4B`, `Ministral-3-3B-Instruct`, `Granite-4.1-3B`, `SmolLM3-3B`.
+    *   **Router / Decider**: `Qwen3.5-0.8B`, `Qwen3-0.6B`, `LFM2.5-350M`, `Decider-0.8B`.
+*   **Server control panel**: a full-screen panel with four tabs:
+    *   **Status**: start/stop, the **LAN base URL** with a copy button, configurable port, models in memory, free RAM and a ready-to-paste `curl` test.
+    *   **Models**: one selector per role (chat, completions, speech-to-text, vision, router) with direct **Download** buttons, Spanish (`[ES]`) and Recommended (`[REC]`) badges, TTS language and speed, model aliases (`gpt-4o=Qwen3.5-4B`) and import of your own `model_allowlist.json`.
+    *   **Security**: API key (show, generate, copy) and CORS.
+    *   **Activity**: the latest requests with status, duration and the model that answered.
+*   **Choose what serves each request**: a request's `model` field wins; otherwise the slot for its kind of request (audio, image, completions, chat). A small **router** model can pick the best model when a client sends `model: "auto"`. Matching is exact (never by substring).
 *   **Local Allowlist Asset Bundling**: Bundles `assets/model_allowlists/1_0_11.json` inside the APK assets. Models defined in local allowlists (like Whisper-Large-V3-Turbo) load instantly in the app's download manager without depending on internet GitHub raw files.
-*   **OpenAI-Compatible Schema**: Designed to cleanly integrate with your existing scripts, Python backends, and low-code wrappers (like `n8n`) using standard JSON / Multipart schemas.
 *   **Speech-to-Text (STT) & Whisper Support**: Optimized for `litert-community/whisper-large-v3-turbo` (`whisper_large_v3_turbo_30s_i4.tflite`) and multimodal LiteRT-LM models (e.g., Gemma 3n / Gemma 4), supporting accurate Spanish (`language=es`) and multilingual audio transcription.
-*   **Dual Active Model Management**: `PocketNodeState` manages `activeChatModel` and `activeAudioModel` independently.
 *   **Zero Cloud, Zero Cost**: 100% on-device inference using your Android's NPU/GPU/CPU. Completely offline and private.
 
 ---
@@ -33,10 +40,10 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 
 1. **Clone & Build**: Clone this repository and build the APK using Android Studio or Gradle CLI.
 2. **Download Models**: Open the app and download your preferred models (e.g. Gemma 4 for Chat, `Whisper-Large-V3-Turbo` for Speech-to-Text).
-3. **Configure & Start Server**: Open the left-side navigation drawer, tap **Pocket Node Server** to open the server dialog:
-   - Choose your **Chat / Completions Model**.
-   - Choose your **Audio STT Model**.
-   - Tap **Iniciar Servidor HTTP** to ignite the background service!
+3. **Configure & Start Server**: Open the left-side navigation drawer, tap **Pocket Node Server** to open the server panel:
+   - **Models** tab: choose the model for chat, speech-to-text, and the rest (or leave them on Automatic).
+   - **Security** tab: generate an API key.
+   - **Status** tab: tap **Start server**, then copy the base URL shown there.
 4. **Test it out**:
    - **List models**:
      ```bash

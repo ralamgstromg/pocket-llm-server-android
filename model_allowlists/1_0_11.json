@@ -33,7 +33,18 @@
         "llm_agent_chat",
         "llm_ask_image",
         "llm_ask_audio"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat",
+        "stt",
+        "vision",
+        "router"
+      ],
+      "toolFormat": "native"
     },
     {
       "name": "Gemma-4-E4B-it",
@@ -68,7 +79,17 @@
         "llm_agent_chat",
         "llm_ask_image",
         "llm_ask_audio"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat",
+        "stt",
+        "vision"
+      ],
+      "toolFormat": "native"
     },
     {
       "name": "Gemma-3n-E2B-it",
@@ -96,6 +117,14 @@
       "bestForTaskTypes": [
         "llm_ask_image",
         "llm_ask_audio"
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "stt",
+        "vision"
       ]
     },
     {
@@ -120,6 +149,14 @@
         "llm_prompt_lab",
         "llm_ask_image",
         "llm_ask_audio"
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "stt",
+        "vision"
       ]
     },
     {
@@ -129,7 +166,7 @@
       "description": "A variant of [google/Gemma-3-1B-IT](https://huggingface.co/google/Gemma-3-1B-IT) with 4-bit quantization ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
       "sizeInBytes": 584417280,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "a6306a4e292016480083b73b8dc6f3f939ae04c3",
+      "commitHash": "d448835d84411a08f577e25f3afebe528402d73b",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -144,6 +181,13 @@
       "bestForTaskTypes": [
         "llm_chat",
         "llm_prompt_lab"
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "router"
       ]
     },
     {
@@ -171,9 +215,9 @@
       "modelId": "litert-community/Qwen2.5-1.5B-Instruct",
       "modelFile": "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
       "description": "A variant of [Qwen/Qwen2.5-1.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
-      "sizeInBytes": 1597931520,
+      "sizeInBytes": 1597922856,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "19edb84c69a0212f29a6ef17ba0d6f278b6a1614",
+      "commitHash": "5e6e7a58d03777898b31330a15d2e0a5a9107de3",
       "defaultConfig": {
         "topK": 20,
         "topP": 0.8,
@@ -184,7 +228,12 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "toolFormat": "hermes"
     },
     {
       "name": "Qwen3-0.6B",
@@ -193,7 +242,7 @@
       "description": "A variant of [Qwen/Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B) with mixed int4 quantization ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
       "sizeInBytes": 497516544,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "a3c5d805ae362dff7f580bc25f2dfb9a5a7eaa76",
+      "commitHash": "e6687177e00897731e7716267eebd4eba0dde7c2",
       "defaultConfig": {
         "topK": 20,
         "topP": 0.8,
@@ -204,7 +253,15 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "router"
+      ],
+      "toolFormat": "hermes"
     },
     {
       "name": "Qwen3.5-4B",
@@ -213,7 +270,7 @@
       "description": "A variant of [Qwen/Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B) (text decoder only, hybrid GatedDeltaNet) with mixed int4 quantization ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM). Requires LiteRT-LM >= 0.15. Use the CPU backend on 8 GB devices.",
       "sizeInBytes": 2754365536,
       "minDeviceMemoryInGb": 8,
-      "commitHash": "1f89ed8a25015aa8a488db473901b05a9e1aa3d1",
+      "commitHash": "6e49632cd95c0e0b8de43ca645c4fcb0f53d1bac",
       "llmSupportThinking": true,
       "defaultConfig": {
         "topK": 20,
@@ -226,7 +283,15 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes"
     },
     {
       "name": "DeepSeek-R1-Distill-Qwen-1.5B",
@@ -255,7 +320,7 @@
       "description": "A variant of [Liquid AI LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
       "sizeInBytes": 736015744,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "a986969f90e60e694169b22e38b60a86e65c0448",
+      "commitHash": "2b81a4be8ceaec7a74614fc6df2efcae5ed55828",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -266,7 +331,12 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "toolFormat": "pythonic"
     },
     {
       "name": "Phi-4-mini-instruct",
@@ -317,7 +387,7 @@
       "description": "Fine-tuned Function Gemma 270M model for Mobile Actions.",
       "sizeInBytes": 288964608,
       "minDeviceMemoryInGb": 6,
-      "commitHash": "f1c7b940a5a2598fb940648fb3cfcc745b18184b",
+      "commitHash": "6d7eb4d4a1d25be7e049f89b8a5080561cedc41c",
       "defaultConfig": {
         "topK": 64,
         "topP": 0.95,
@@ -337,7 +407,7 @@
       "modelId": "litert-community/VibeVoice-ASR-Streaming-1.5B",
       "modelFile": "VibeVoice-ASR-Streaming-1.5B.litertlm",
       "commitHash": "a049ea6f5c8ed8794ad05c853383ee986da28315",
-      "description": "Modelo ASR de streaming con soporte optimizado para espa\u00f1ol (ES), ingl\u00e9s y multiling\u00fce en Android LiteRT-LM. Ideal para transcripci\u00f3n en tiempo real y STT en API OpenAI.",
+      "description": "Modelo ASR de streaming con soporte optimizado para español (ES), inglés y multilingüe en Android LiteRT-LM. Ideal para transcripción en tiempo real y STT en API OpenAI.",
       "sizeInBytes": 1992209664,
       "minDeviceMemoryInGb": 6,
       "llmSupportAudio": true,
@@ -352,76 +422,21 @@
         "llm_chat",
         "llm_prompt_lab",
         "llm_ask_audio"
-      ]
-    },
-    {
-      "name": "Whisper-Large-v3-Turbo",
-      "modelId": "litert-community/whisper-large-v3-turbo",
-      "modelFile": "whisper_large_v3_turbo_30s_i4.tflite",
-      "commitHash": "4e3af6a1597a54b6e47d2899cf4f6c39932b0b7e",
-      "description": "OpenAI Whisper Large v3 Turbo cuantizado a 4 bits para LiteRT. M\u00e1xima precisi\u00f3n en transcripci\u00f3n de audio (STT) en espa\u00f1ol y multiling\u00fce.",
-      "sizeInBytes": 755273648,
-      "minDeviceMemoryInGb": 6,
-      "llmSupportAudio": true,
-      "defaultConfig": {
-        "topK": 20,
-        "topP": 0.8,
-        "temperature": 0.0,
-        "maxTokens": 1024,
-        "accelerators": "gpu,cpu"
-      },
-      "taskTypes": [
-        "llm_ask_audio",
-        "llm_chat",
-        "llm_prompt_lab"
-      ]
-    },
-    {
-      "name": "Audio8-TTS-0.6B",
-      "modelId": "litert-community/Audio8-TTS-Preview-0.6b",
-      "modelFile": "slow_ar_int4.tflite",
-      "commitHash": "56fcb491ebf03eb3a1a66615fedf6744015dd4c7",
-      "description": "Modelo de s\u00edntesis de voz (TTS) y clonaci\u00f3n de voz en dispositivo con soporte para espa\u00f1ol (ES) en LiteRT.",
-      "sizeInBytes": 386373728,
-      "minDeviceMemoryInGb": 4,
-      "defaultConfig": {
-        "topK": 40,
-        "topP": 0.9,
-        "temperature": 0.8,
-        "maxTokens": 1024,
-        "accelerators": "gpu,cpu"
-      },
-      "taskTypes": [
-        "llm_chat",
-        "llm_prompt_lab"
-      ]
-    },
-    {
-      "name": "Qwen3-TTS-0.6B",
-      "modelId": "litert-community/Qwen3-TTS-12Hz-0.6B-Base",
-      "modelFile": "talker_int4.tflite",
-      "commitHash": "5ad41057956abe19b6a3b78e677a0356ea606663",
-      "description": "Modelo Qwen3 TTS 12Hz 0.6B cuantizado en int4 para s\u00edntesis de habla multiling\u00fce incluyendo espa\u00f1ol.",
-      "sizeInBytes": 255998768,
-      "minDeviceMemoryInGb": 4,
-      "defaultConfig": {
-        "topK": 40,
-        "topP": 0.9,
-        "temperature": 0.8,
-        "maxTokens": 1024,
-        "accelerators": "gpu,cpu"
-      },
-      "taskTypes": [
-        "llm_chat",
-        "llm_prompt_lab"
+      ],
+      "languages": [
+        "en",
+        "es"
+      ],
+      "recommendedRoles": [
+        "stt"
       ]
     },
     {
       "name": "Agents-A1-4B",
       "modelId": "litert-community/Agents-A1-4B",
       "modelFile": "Agents-A1-4B_mixed_int4.litertlm",
-      "commitHash": "963081962f0edcc8aadbcc1a60c2e30dcad5ceb1",
-      "description": "Alternativa avanzada a KEV para agentes: InternScience Agents-A1 4B (GatedDeltaNet h\u00edbrido) especializado en invocaci\u00f3n de herramientas (tool-calling) y ejecuci\u00f3n de agentes.",
+      "commitHash": "f70066a51ec95b38714edcffaecf76acc7f15eeb",
+      "description": "Alternativa avanzada a KEV para agentes: InternScience Agents-A1 4B (GatedDeltaNet híbrido) especializado en invocación de herramientas (tool-calling) y ejecución de agentes.",
       "sizeInBytes": 2754365536,
       "minDeviceMemoryInGb": 8,
       "llmSupportThinking": true,
@@ -437,14 +452,22 @@
         "llm_chat",
         "llm_prompt_lab",
         "llm_agent_chat"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes"
     },
     {
       "name": "Decider-0.8B",
       "modelId": "litert-community/decider-0.8b-LiteRT",
       "modelFile": "decider-0.8b_int8.litertlm",
-      "commitHash": "52dea2d8f79401a5137d0dddeebfbc9b72ee2ade",
-      "description": "Alternativa ligera a KEV: Mapika Decider 0.8B para toma de decisiones r\u00e1pida, clasificaci\u00f3n y salidas estructuradas en LiteRT-LM.",
+      "commitHash": "f788aaebf2323e3e1761771a08072572e076b9b4",
+      "description": "Alternativa ligera a KEV: Mapika Decider 0.8B para toma de decisiones rápida, clasificación y salidas estructuradas en LiteRT-LM.",
       "sizeInBytes": 963184864,
       "minDeviceMemoryInGb": 4,
       "defaultConfig": {
@@ -457,55 +480,21 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
-      ]
-    },
-    {
-      "name": "Kev-4B",
-      "modelId": "litert-community/Kev-4B-LiteRT",
-      "modelFile": "kev-4b_rowprefill_L1024_fp16fc_i8emb.tflite",
-      "commitHash": "90285c9e5cecb0b6e523d23777e65208426663b1",
-      "description": "Modelo KEV de Jared Palmer (Qwen3.5 4B) optimizado para decisiones y clasificaci\u00f3n r\u00e1pida en LiteRT.",
-      "sizeInBytes": 1890000000,
-      "minDeviceMemoryInGb": 6,
-      "defaultConfig": {
-        "topK": 20,
-        "topP": 0.8,
-        "temperature": 0.2,
-        "maxTokens": 1024,
-        "accelerators": "cpu,gpu"
-      },
-      "taskTypes": [
-        "llm_chat",
-        "llm_prompt_lab"
-      ]
-    },
-    {
-      "name": "d1-omni-600M",
-      "modelId": "litert-community/d1-omni-600M-LiteRT",
-      "modelFile": "d1-omni-600M_decide_L1024_fp16.tflite",
-      "commitHash": "afce506e80dee25c007a88e6ab24fd62fd456eab",
-      "description": "Modelo omnimodal de decisi\u00f3n Liquid AI d1-omni 600M con soporte nativo para espa\u00f1ol.",
-      "sizeInBytes": 1200000000,
-      "minDeviceMemoryInGb": 4,
-      "defaultConfig": {
-        "topK": 20,
-        "topP": 0.8,
-        "temperature": 0.3,
-        "maxTokens": 1024,
-        "accelerators": "gpu,cpu"
-      },
-      "taskTypes": [
-        "llm_chat",
-        "llm_prompt_lab"
+      ],
+      "languages": [
+        "en"
+      ],
+      "recommendedRoles": [
+        "router"
       ]
     },
     {
       "name": "Qwen3.5-2B",
       "modelId": "litert-community/Qwen3.5-2B",
       "modelFile": "Qwen3.5-2B_int8.litertlm",
-      "commitHash": "b6283ba1d52edf9eb3a6d77b4288c6197e9eab42",
-      "description": "\u00daltima versi\u00f3n de Qwen3.5 2B INT8 para Android LiteRT-LM. Excelente balance de velocidad y calidad en espa\u00f1ol.",
-      "sizeInBytes": 2116592816,
+      "commitHash": "144548ae1c256938b0a83cd3dc63e5b7eea56b85",
+      "description": "Última versión de Qwen3.5 2B INT8 para Android LiteRT-LM. Excelente balance de velocidad y calidad en español.",
+      "sizeInBytes": 2120039328,
       "minDeviceMemoryInGb": 6,
       "defaultConfig": {
         "topK": 20,
@@ -518,14 +507,22 @@
         "llm_chat",
         "llm_prompt_lab",
         "llm_agent_chat"
-      ]
+      ],
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes"
     },
     {
       "name": "Qwen2.5-Coder-1.5B-Instruct",
       "modelId": "litert-community/Qwen2.5-Coder-1.5B-Instruct",
       "modelFile": "Qwen2.5-Coder-1.5B-Instruct_int4.litertlm",
       "commitHash": "7b210640ac9f564a62eed09ad6e619bddef6d245",
-      "description": "Qwen2.5 Coder 1.5B Instruct cuantizado en int4. Especializado en generaci\u00f3n de c\u00f3digo, herramientas y estructurado.",
+      "description": "Qwen2.5 Coder 1.5B Instruct cuantizado en int4. Especializado en generación de código, herramientas y estructurado.",
       "sizeInBytes": 1117385648,
       "minDeviceMemoryInGb": 4,
       "defaultConfig": {
@@ -545,8 +542,8 @@
       "name": "Falcon-H1-1.5B-Instruct",
       "modelId": "litert-community/Falcon-H1-1.5B-Instruct",
       "modelFile": "Falcon-H1-1.5B-Instruct_int8.litertlm",
-      "commitHash": "c1c8e07fd1425aff2e31eb3b61d02cc588a661c0",
-      "description": "Falcon-H1 1.5B Instruct INT8 h\u00edbrido para LiteRT-LM. Procesamiento conversacional de alta eficiencia.",
+      "commitHash": "5e2d3af2d1cc0fa010e111a5f51a28973ed5c6e5",
+      "description": "Falcon-H1 1.5B Instruct INT8 híbrido para LiteRT-LM. Procesamiento conversacional de alta eficiencia.",
       "sizeInBytes": 1725449600,
       "minDeviceMemoryInGb": 6,
       "defaultConfig": {
@@ -559,6 +556,357 @@
       "taskTypes": [
         "llm_chat",
         "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "Qwen3-ASR-1.7B",
+      "modelId": "litert-community/Qwen3-ASR-1.7B",
+      "modelFile": "Qwen3-ASR-1.7B.litertlm",
+      "commitHash": "184ec0f1ef8c8b5254100e95ec713b5557fb91de",
+      "description": "Qwen3-ASR 1.7B: reconocimiento de voz (STT) en 30 idiomas, incluido espanol, para LiteRT-LM. Audio de hasta 30 s por peticion. Mejor opcion para /v1/audio/transcriptions.",
+      "sizeInBytes": 2693064192,
+      "minDeviceMemoryInGb": 8,
+      "llmSupportAudio": true,
+      "languages": [
+        "es",
+        "en",
+        "pt",
+        "fr",
+        "de",
+        "it",
+        "zh",
+        "ja",
+        "ko",
+        "ar",
+        "ru"
+      ],
+      "recommendedRoles": [
+        "stt"
+      ],
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.0,
+        "maxContextLength": 2048,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_ask_audio",
+        "llm_chat",
+        "llm_prompt_lab"
+      ],
+      "bestForTaskTypes": [
+        "llm_ask_audio"
+      ]
+    },
+    {
+      "name": "Qwen3-ASR-1.7B-15s",
+      "modelId": "litert-community/Qwen3-ASR-1.7B",
+      "modelFile": "Qwen3-ASR-1.7B-15s.litertlm",
+      "commitHash": "184ec0f1ef8c8b5254100e95ec713b5557fb91de",
+      "description": "Qwen3-ASR 1.7B con ventana de 15 s: mas ligero en memoria que la de 30 s. STT multilingue con espanol.",
+      "sizeInBytes": 2701438880,
+      "minDeviceMemoryInGb": 6,
+      "llmSupportAudio": true,
+      "languages": [
+        "es",
+        "en",
+        "pt",
+        "fr",
+        "de",
+        "it",
+        "zh",
+        "ja",
+        "ko",
+        "ar",
+        "ru"
+      ],
+      "recommendedRoles": [
+        "stt"
+      ],
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.0,
+        "maxContextLength": 2048,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_ask_audio",
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "Parakeet-TDT-0.6B-v3",
+      "modelId": "litert-community/parakeet-tdt-0.6b-v3",
+      "modelFile": "parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm",
+      "commitHash": "6301c08d8d2c233e90ccbd8f193392abe191a0b3",
+      "description": "NVIDIA Parakeet TDT 0.6B v3 (int8): STT multilingue europeo con espanol, muy rapido. Ventana de 5 s por bloque.",
+      "sizeInBytes": 614588752,
+      "minDeviceMemoryInGb": 4,
+      "llmSupportAudio": true,
+      "languages": [
+        "es",
+        "en",
+        "fr",
+        "de",
+        "it",
+        "pt",
+        "nl",
+        "pl",
+        "ru"
+      ],
+      "recommendedRoles": [
+        "stt"
+      ],
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.0,
+        "maxContextLength": 1024,
+        "maxTokens": 512,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_ask_audio",
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "Qwen3.5-0.8B",
+      "modelId": "litert-community/Qwen3.5-0.8B",
+      "modelFile": "Qwen3.5-0.8B_int8.litertlm",
+      "commitHash": "efb93fca20bc4b65df078b2b0a365d3350b3dcfb",
+      "description": "Qwen3.5 0.8B: modelo diminuto multilingue (incluye espanol), ideal como router/decisor y para tareas rapidas con herramientas.",
+      "sizeInBytes": 964861904,
+      "minDeviceMemoryInGb": 4,
+      "llmSupportThinking": true,
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "router",
+        "chat"
+      ],
+      "toolFormat": "hermes",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
+      ]
+    },
+    {
+      "name": "Qwen3-1.7B",
+      "modelId": "litert-community/Qwen3-1.7B",
+      "modelFile": "Qwen3-1.7B_dynamic_wi4b32_afp32.litertlm",
+      "commitHash": "79bf0667b32ae025b972e5fe555fe72ca6e8816c",
+      "description": "Qwen3 1.7B int4: chat multilingue con modo de razonamiento. Buen equilibrio calidad/memoria en espanol.",
+      "sizeInBytes": 977184032,
+      "minDeviceMemoryInGb": 6,
+      "llmSupportThinking": true,
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat",
+        "router"
+      ],
+      "toolFormat": "hermes",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
+      ]
+    },
+    {
+      "name": "Qwen3-4B",
+      "modelId": "litert-community/Qwen3-4B",
+      "modelFile": "qwen3_4b_mixed_int4.litertlm",
+      "commitHash": "8b4c3d3f6e727cdb445f42feff14b808db8da4fa",
+      "description": "Qwen3 4B mixed int4: chat y herramientas multilingue (espanol) con razonamiento.",
+      "sizeInBytes": 2659053760,
+      "minDeviceMemoryInGb": 8,
+      "llmSupportThinking": true,
+      "languages": [
+        "es",
+        "en"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
+      ]
+    },
+    {
+      "name": "Ministral-3-3B-Instruct",
+      "modelId": "litert-community/Ministral-3-3B-Instruct-2512",
+      "modelFile": "Ministral-3-3B-Instruct-2512_q4_block32_ekv4096.litertlm",
+      "commitHash": "f0d5ce0bf03a85e905b0590330fb69ae72784559",
+      "description": "Mistral Ministral 3 3B Instruct (2512): excelente en espanol y frances, con llamadas a herramientas.",
+      "sizeInBytes": 2342866928,
+      "minDeviceMemoryInGb": 8,
+      "languages": [
+        "es",
+        "en",
+        "fr",
+        "de",
+        "it",
+        "pt"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "mistral",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.95,
+        "temperature": 0.3,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
+      ]
+    },
+    {
+      "name": "Granite-4.1-3B",
+      "modelId": "litert-community/granite-4.1-3b",
+      "modelFile": "granite-4.1-3b_int4.litertlm",
+      "commitHash": "99121c48b85295847c9ebe2d73b956a1e07bd2b5",
+      "description": "IBM Granite 4.1 3B int4: instrucciones y herramientas multilingues (espanol), licencia Apache-2.0.",
+      "sizeInBytes": 2191445936,
+      "minDeviceMemoryInGb": 8,
+      "languages": [
+        "es",
+        "en",
+        "fr",
+        "de",
+        "pt",
+        "it"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.3,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
+      ]
+    },
+    {
+      "name": "LFM2.5-350M",
+      "modelId": "litert-community/LFM2.5-350M",
+      "modelFile": "LFM2.5-350M_int4.litertlm",
+      "commitHash": "0fdead63ee63cd01703adb5f085d0a72b0cb5e20",
+      "description": "Liquid LFM2.5 350M int4: el modelo mas pequeno del catalogo, para decisiones rapidas (router) y extraccion de datos.",
+      "sizeInBytes": 247747696,
+      "minDeviceMemoryInGb": 3,
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "de",
+        "ja",
+        "ko",
+        "zh",
+        "ar"
+      ],
+      "recommendedRoles": [
+        "router"
+      ],
+      "toolFormat": "pythonic",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.1,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab"
+      ]
+    },
+    {
+      "name": "SmolLM3-3B",
+      "modelId": "litert-community/SmolLM3-3B",
+      "modelFile": "SmolLM3-3B_q4_block32_ekv4096.litertlm",
+      "commitHash": "7621a4f099a00b0518e0a6e7c5628af08ab4184e",
+      "description": "SmolLM3 3B q4: chat multilingue (espanol) con razonamiento opcional.",
+      "sizeInBytes": 2004633520,
+      "minDeviceMemoryInGb": 8,
+      "llmSupportThinking": true,
+      "languages": [
+        "es",
+        "en",
+        "fr",
+        "de",
+        "it",
+        "pt"
+      ],
+      "recommendedRoles": [
+        "chat"
+      ],
+      "toolFormat": "hermes",
+      "defaultConfig": {
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxContextLength": 4096,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_agent_chat"
       ]
     }
   ]

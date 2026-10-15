@@ -1,60 +1,15 @@
 package com.google.ai.edge.gallery.server.openai
 
 import java.security.MessageDigest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-
-/**
- * Extracts tool calls that a model wrote as plain text using the Qwen/Hermes convention:
- * `<tool_call>{"name": "...", "arguments": {...}}</tool_call>`.
- *
- * Used for models whose LiteRT-LM bundle has no native tool-call parser (e.g. generic models).
- */
-object ToolCallTextParser {
-  private val TOOL_CALL_REGEX = Regex("<tool_call>(.*?)</tool_call>", RegexOption.DOT_MATCHES_ALL)
-
-  /** Returns the remaining text content and the parsed tool calls. Malformed blocks stay as text. */
-  fun parse(text: String, newId: () -> String): Pair<String, List<ParsedToolCall>> {
-    val calls = mutableListOf<ParsedToolCall>()
-    val remaining =
-      TOOL_CALL_REGEX.replace(text) { match ->
-        val call = parseCall(match.groupValues[1].trim(), newId)
-        if (call == null) {
-          match.value
-        } else {
-          calls.add(call)
-          ""
-        }
-      }
-    return Pair(if (calls.isEmpty()) text else remaining.trim(), calls)
-  }
-
-  private fun parseCall(body: String, newId: () -> String): ParsedToolCall? {
-    val obj =
-      try {
-        OpenAiJson.parseToJsonElement(body) as? JsonObject
-      } catch (e: Exception) {
-        null
-      } ?: return null
-    val name = (obj["name"] as? JsonPrimitive)?.contentOrNull ?: return null
-    val args =
-      when (val a = obj["arguments"] ?: obj["parameters"]) {
-        null -> "{}"
-        is JsonPrimitive -> if (a.isString) a.content else a.toString()
-        else -> a.toString()
-      }
-    return ParsedToolCall(newId(), name, args)
-  }
-}
 
 /**
  * Holds back text that could be the start of a stop sequence and truncates the output when a stop
  * sequence is found. Works on streamed deltas.
  */
 class StopSequenceFilter(private val stops: List<String>) {
+  private val effectiveStops = (stops + DEFAULT_STOPS).distinct().filter { it.isNotEmpty() }
   private val buffer = StringBuilder()
-  private val maxStopLength = stops.maxOfOrNull { it.length } ?: 0
+  private val maxStopLength = effectiveStops.maxOfOrNull { it.length } ?: 0
 
   var stopped = false
     private set
@@ -62,9 +17,8 @@ class StopSequenceFilter(private val stops: List<String>) {
   /** Feeds a delta and returns the text that is safe to emit. */
   fun feed(delta: String): String {
     if (stopped) return ""
-    if (stops.isEmpty()) return delta
     buffer.append(delta)
-    val hit = stops.mapNotNull { s -> buffer.indexOf(s).takeIf { it >= 0 } }.minOrNull()
+    val hit = effectiveStops.mapNotNull { s -> buffer.indexOf(s).takeIf { it >= 0 } }.minOrNull()
     if (hit != null) {
       stopped = true
       val out = buffer.substring(0, hit)
@@ -83,6 +37,19 @@ class StopSequenceFilter(private val stops: List<String>) {
     val out = buffer.toString()
     buffer.clear()
     return out
+  }
+
+  companion object {
+    val DEFAULT_STOPS = listOf(
+      "<|im_end|>",
+      "<|endoftext|>",
+      "<end_of_turn>",
+      "<|im_start|>",
+      "<|user|>",
+      "<|assistant|>",
+      "</s>",
+      "<eos>",
+    )
   }
 }
 
@@ -116,6 +83,18 @@ object ResponseUtils {
       )
     }
 
+  fun choice(index: Int, content: String, reasoning: String?, toolCalls: List<ParsedToolCall>, finishReason: String) =
+    ChatChoice(
+      index = index,
+      message =
+        AssistantMessage(
+          content = if (toolCalls.isNotEmpty() && content.isEmpty()) null else content,
+          reasoningContent = reasoning,
+          toolCalls = toolCalls.takeIf { it.isNotEmpty() }?.let { toolCallDtos(it) },
+        ),
+      finishReason = finishReason,
+    )
+
   fun completion(
     id: String,
     created: Long,
@@ -130,18 +109,7 @@ object ResponseUtils {
       id = id,
       created = created,
       model = model,
-      choices =
-        listOf(
-          ChatChoice(
-            message =
-              AssistantMessage(
-                content = if (toolCalls.isNotEmpty() && content.isEmpty()) null else content,
-                reasoningContent = reasoning,
-                toolCalls = toolCalls.takeIf { it.isNotEmpty() }?.let { toolCallDtos(it) },
-              ),
-            finishReason = finishReason,
-          )
-        ),
+      choices = listOf(choice(0, content, reasoning, toolCalls, finishReason)),
       usage = usage,
     )
 

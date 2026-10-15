@@ -3,6 +3,7 @@ package com.google.ai.edge.gallery.server.openai
 import android.util.Log
 import com.google.ai.edge.gallery.data.Accelerator
 import com.google.ai.edge.gallery.data.ConfigKeys
+import com.google.ai.edge.gallery.data.DEFAULT_MAX_TOKEN
 import com.google.ai.edge.gallery.data.DEFAULT_TEMPERATURE
 import com.google.ai.edge.gallery.data.DEFAULT_TOPK
 import com.google.ai.edge.gallery.data.DEFAULT_TOPP
@@ -20,8 +21,21 @@ import com.google.ai.edge.litertlm.ThinkingConfig
 import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TAG = "PocketNodeChatEngine"
+
+/** Longest a single inference may run before it is cancelled (504). */
+private const val ENGINE_TIMEOUT_MS = 10L * 60 * 1000
+
+/**
+ * Text is emitted with this lag so a loop (the model re-writing its own answer) can be detected
+ * and cut before the repeated text reaches the client.
+ */
+private const val REPEAT_WINDOW = 160
+
+/** Thrown inside the collector to stop generation (end-of-turn marker or repeated answer). */
+private class RepetitionDetected : RuntimeException()
 
 /** Events produced while answering one chat completion request. */
 sealed interface ChatEvent {
@@ -89,6 +103,10 @@ object ChatCompletionEngine {
         else "You must call one of the provided tools."
       system = listOfNotNull(system, hint).joinToString("\n\n")
     }
+    if (req.tools.isNotEmpty() && ToolPrompt.needsHint(model.toolFormat)) {
+      system = listOfNotNull(system, ToolPrompt.hint(req.tools, model.toolFormat)).joinToString("\n\n")
+    }
+    val maxTokens = req.maxTokens ?: model.getIntConfigValue(key = ConfigKeys.MAX_TOKENS, defaultValue = DEFAULT_MAX_TOKEN)
     val thinking = req.enableThinking?.let { ThinkingConfig(it) }
     val responseFormat = LiteRtLmMapper.responseFormat(req.responseFormat)
 
@@ -99,7 +117,8 @@ object ChatCompletionEngine {
         tools = req.tools.map { tool(ClientSideTool(it)) },
         samplerConfig = sampler,
         automaticToolCalling = false,
-        maxOutputToken = req.maxTokens,
+        // Without a cap some models never emit end-of-turn and keep repeating the answer.
+        maxOutputToken = maxTokens,
         thinkingConfig = thinking,
         enableResponseFormat = responseFormat != null,
       )
@@ -107,25 +126,51 @@ object ChatCompletionEngine {
 
     val constrained = req.tools.isNotEmpty() && req.toolChoice != ToolChoice.Auto
     val (conversation, borrowedUiConversation) = openConversation(model, instance, config, constrained)
+    // End-of-turn markers written as text (and client stops) end generation; otherwise the model
+    // keeps writing new turns, repeating its answer until the token cap.
+    val stops = (req.stop + StopSequenceFilter.DEFAULT_STOPS).filter { it.isNotEmpty() }.distinct()
+    val maxStop = stops.maxOfOrNull { it.length } ?: 0
+    val produced = StringBuilder()
+    var emitted = 0
     try {
-      conversation
-        .sendMessageAsync(
-          message,
-          emptyMap(),
-          null,
-          null,
-          null,
-          req.maxTokens,
-          thinking,
-          responseFormat,
-        )
-        // LiteRT-LM's callbackFlow uses trySend with a bounded buffer; never drop deltas.
-        .buffer(Channel.UNLIMITED)
-        .collect { partial ->
-          val out = LiteRtLmMapper.output(partial)
-          if (out.text.isNotEmpty() || out.reasoning != null) onEvent(ChatEvent.Delta(out.text, out.reasoning))
-          if (out.toolCalls.isNotEmpty()) onEvent(ChatEvent.ToolCalls(out.toolCalls))
+      val finished =
+        withTimeoutOrNull(ENGINE_TIMEOUT_MS) {
+          try {
+            conversation
+              .sendMessageAsync(message, emptyMap(), null, null, null, maxTokens, thinking, responseFormat)
+              // LiteRT-LM's callbackFlow uses trySend with a bounded buffer; never drop deltas.
+              .buffer(Channel.UNLIMITED)
+              .collect { partial ->
+                val out = LiteRtLmMapper.output(partial)
+                val scanFrom = (produced.length - maxStop).coerceAtLeast(0)
+                produced.append(out.text)
+                val stopAt = stops.mapNotNull { st -> produced.indexOf(st, scanFrom).takeIf { it >= 0 } }.minOrNull()
+                if (stopAt != null) {
+                  produced.setLength(stopAt)
+                  throw RepetitionDetected()
+                }
+                val repeatAt = repetitionStart(produced)
+                if (repeatAt >= 0) {
+                  produced.setLength(repeatAt)
+                  throw RepetitionDetected()
+                }
+                val ready = (produced.length - REPEAT_WINDOW).coerceAtLeast(emitted)
+                val text = produced.substring(emitted, ready)
+                emitted = ready
+                if (text.isNotEmpty() || out.reasoning != null) onEvent(ChatEvent.Delta(text, out.reasoning))
+                if (out.toolCalls.isNotEmpty()) onEvent(ChatEvent.ToolCalls(out.toolCalls))
+              }
+          } catch (e: RepetitionDetected) {
+            Log.i(TAG, "Generation stopped early for '${model.name}' (end-of-turn marker or repetition).")
+            runCatching { conversation.cancelProcess() }
+          }
+          true
         }
+      if (finished == null) {
+        runCatching { conversation.cancelProcess() }
+        throw OpenAiException(504, "Inference timed out after ${ENGINE_TIMEOUT_MS / 60_000} minutes.", code = "inference_timeout")
+      }
+      if (produced.length > emitted) onEvent(ChatEvent.Delta(produced.substring(emitted), null))
       return tokenCounts(conversation)
     } catch (e: Throwable) {
       runCatching { conversation.cancelProcess() }
@@ -180,6 +225,19 @@ object ChatCompletionEngine {
       tools = instance.tools,
       enableConversationConstrainedDecoding = instance.enableConversationConstrainedDecoding,
     )
+  }
+
+  /**
+   * Returns where a repeated block starts when the last [REPEAT_WINDOW] chars already appeared
+   * earlier (non-overlapping), i.e. the model is re-writing previous output; -1 otherwise.
+   */
+  private fun repetitionStart(text: StringBuilder): Int {
+    if (text.length < REPEAT_WINDOW * 2) return -1
+    val tailStart = text.length - REPEAT_WINDOW
+    val tail = text.substring(tailStart)
+    if (tail.isBlank()) return -1
+    val prev = text.lastIndexOf(tail, tailStart - REPEAT_WINDOW)
+    return if (prev >= 0) tailStart else -1
   }
 
   @OptIn(ExperimentalApi::class)

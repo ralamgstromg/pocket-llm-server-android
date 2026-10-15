@@ -26,6 +26,10 @@ Notes:
 - AGP 9 rejects `minSdkVersion`/`targetSdkVersion` in `AndroidManifest.xml`; set them only in `app/build.gradle.kts`.
 - targetSdk 37 enforces edge-to-edge and the newer foreground-service rules. `PocketNodeService` uses the `specialUse` foreground service type on API 34+ (no daily time limit; manifest property `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`) and `dataSync` on API 31–33, and implements `onTimeout()` to stop cleanly if a time-limited type expires.
 - Security scan: `trivy fs --scanners vuln,secret,misconfig .`. For Gradle dependencies, generate a temporary lockfile (init script with `dependencyLocking { lockAllConfigurations() }` + `./gradlew :app:dependencies --write-locks`), scan `app/gradle.lockfile`, then delete it. Last scan: no findings in app runtime dependencies; BouncyCastle 1.80.2 (CVE-2026-8763, CVE-2026-13506) is only pulled by the AGP lint tool (`androidLintTool`), not shipped in the APK.
+- Versions re-checked against Maven Central, Google Maven and services.gradle.org on 2026-10-15: every pin above is already the latest stable (Kotlin 2.5.0-Beta1, AGP 9.5.0-alpha and CameraX 1.7.0-alpha are pre-releases and were not adopted).
+- CI (`.github/workflows/build_android.yaml`) runs `:app:testDebugUnitTest`, `:app:lintDebug` and `assembleRelease`.
+- The API key is stored with `EncryptedSharedPreferences` (`security-crypto`, file `pocket_node_secret_prefs`). `<queries>` in the manifest lets the app bind to the system text-to-speech engine (Android 11+ package visibility).
+- Server screen strings live in `res/values/pocket_node_strings.xml` and `res/values-es/`; do not hardcode UI text (lint rejects `LocalContext.current` resource reads in Composables, use `stringResource`).
 - OpenAI-compatible server API: see [docs/OPENAI_API.md](docs/OPENAI_API.md).
 
 ## Build app locally

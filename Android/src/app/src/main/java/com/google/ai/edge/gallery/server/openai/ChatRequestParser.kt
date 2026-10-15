@@ -71,6 +71,8 @@ data class ParsedChatRequest(
   val responseFormat: ResponseFormatSpec,
   /** Null keeps the model default. */
   val enableThinking: Boolean?,
+  /** Number of completions to produce (run one after another). */
+  val n: Int = 1,
 )
 
 /** Validates an OpenAI chat completion request and turns it into a [ParsedChatRequest]. */
@@ -78,10 +80,12 @@ object ChatRequestParser {
   private val TOOL_NAME_REGEX = Regex("^[a-zA-Z0-9_-]{1,64}$")
   private val DATA_URI_REGEX = Regex("^data:([^;,]+)?(;[^,]*)?;base64,(.*)$", RegexOption.DOT_MATCHES_ALL)
   private const val MAX_STOP_SEQUENCES = 4
+  private const val MAX_N = 8
 
   fun parse(req: ChatCompletionRequest): ParsedChatRequest {
     if (req.messages.isEmpty()) invalid("'messages' must contain at least one message.", "messages")
-    if (req.n != null && req.n != 1) invalid("Only n=1 is supported.", "n")
+    req.n?.let { if (it !in 1..MAX_N) invalid("'n' must be between 1 and $MAX_N.", "n") }
+    if ((req.n ?: 1) > 1 && req.stream) invalid("'n' > 1 is not supported together with 'stream'.", "n")
     req.temperature?.let { if (it < 0.0 || it > 2.0) invalid("'temperature' must be between 0 and 2.", "temperature") }
     req.topP?.let { if (it < 0.0 || it > 1.0) invalid("'top_p' must be between 0 and 1.", "top_p") }
     req.topK?.let { if (it < 1) invalid("'top_k' must be >= 1.", "top_k") }
@@ -164,6 +168,7 @@ object ChatRequestParser {
       toolChoice = toolChoice,
       parallelToolCalls = req.parallelToolCalls ?: true,
       responseFormat = parseResponseFormat(req.responseFormat),
+      n = req.n ?: 1,
       enableThinking =
         when (req.reasoningEffort?.lowercase()) {
           null -> null

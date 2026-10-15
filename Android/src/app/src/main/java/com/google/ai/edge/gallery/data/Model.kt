@@ -165,6 +165,18 @@ data class Model(
   /** The type of local runtime environment to use for running the model. */
   val runtimeType: RuntimeType = RuntimeType.UNKNOWN,
 
+  /** Languages the model handles well (BCP-47 codes). Empty when unknown. */
+  val languages: List<String> = listOf(),
+
+  /** Server roles this model is recommended for (chat, stt, router, vision). */
+  val recommendedRoles: List<String> = listOf(),
+
+  /** Non-empty when the Pocket Node server cannot run this model as-is. */
+  val servingNote: String = "",
+
+  /** How the model writes tool calls as text; empty means detect from the output. */
+  val toolFormat: String = "",
+
   /**
    * Set this to a relative path pointing to a dir (e.g., my_model/local_dir/) if you want to
    * manually manage model files instead of downloading them. This dir is relative to the app's

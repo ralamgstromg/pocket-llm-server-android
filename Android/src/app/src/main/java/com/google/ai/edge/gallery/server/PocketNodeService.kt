@@ -3,6 +3,7 @@ package com.google.ai.edge.gallery.server
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.google.ai.edge.gallery.R
 
 class PocketNodeService : Service() {
 
@@ -20,6 +22,7 @@ class PocketNodeService : Service() {
         private const val TAG = "PocketNodeService"
         const val CHANNEL_ID = "PocketNodeServiceChannel"
         const val NOTIFICATION_ID = 1
+        const val ACTION_STOP = "com.google.ai.edge.gallery.server.STOP"
     }
 
     override fun onCreate() {
@@ -28,33 +31,18 @@ class PocketNodeService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         try {
-            // Load stored model preferences
             PocketNodeState.loadPreferences(this)
-
-            // Auto-resolve active models from allowlist if not set
-            val allModels = PocketNodeModelResolver.getAllModels(this)
-            if (PocketNodeState.activeChatModel == null && PocketNodeState.preferredChatModelName.isNotEmpty()) {
-                PocketNodeState.activeChatModel = allModels.find { it.name.equals(PocketNodeState.preferredChatModelName, ignoreCase = true) }
-            }
-            if (PocketNodeState.activeAudioModel == null && PocketNodeState.preferredAudioModelName.isNotEmpty()) {
-                PocketNodeState.activeAudioModel = allModels.find { it.name.equals(PocketNodeState.preferredAudioModelName, ignoreCase = true) }
-            }
-            if (PocketNodeState.activeChatModel == null && allModels.isNotEmpty()) {
-                val downloaded = allModels.find { java.io.File(it.getPath(this)).exists() }
-                PocketNodeState.activeChatModel = downloaded ?: allModels.first()
-            }
-            PocketNodeState.syncSharedModels()
 
             // Start Ktor HTTP Server
             server.start(this)
 
             // Create the persistent notification required by Android for Foreground Services
-            val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("AI Pocket Node Active")
-                .setContentText("Local HTTP server running on port 8080")
-                .setSmallIcon(android.R.drawable.ic_dialog_info) 
-                .build()
+            val notification = buildNotification()
 
             // Tell the OS this service must not be killed while the screen is off
             // specialUse has no daily runtime cap; dataSync (API 31-33) is capped on newer Android.
@@ -73,10 +61,30 @@ class PocketNodeService : Service() {
         return START_STICKY
     }
 
+    private fun buildNotification(): Notification {
+        val stop = PendingIntent.getService(
+            this, 0,
+            Intent(this, PocketNodeService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val open = packageManager.getLaunchIntentForPackage(packageName)?.let {
+            PendingIntent.getActivity(this, 1, it, PendingIntent.FLAG_IMMUTABLE)
+        }
+        val address = "${NetworkAddress.lanIp() ?: "localhost"}:${PocketNodeState.port}"
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.pocket_node_notification_title))
+            .setContentText(getString(R.string.pocket_node_notification_text, address))
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setOngoing(true)
+            .setContentIntent(open)
+            .addAction(0, getString(R.string.pocket_node_stop), stop)
+            .build()
+    }
+
     /** Called when a time-limited foreground service type runs out of time; stop cleanly. */
     override fun onTimeout(startId: Int, fgsType: Int) {
         Log.w(TAG, "Foreground service timeout (type $fgsType); stopping Pocket Node server.")
-        PocketNodeState.lastStartupError = "Android detuvo el servidor por límite de tiempo del servicio en primer plano."
+        PocketNodeState.lastStartupError = "Android stopped the server: foreground service time limit reached."
         stopSelf(startId)
     }
 

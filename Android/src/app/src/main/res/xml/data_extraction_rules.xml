@@ -21,6 +21,7 @@
     <cloud-backup>
         <!-- Pocket Node server settings hold the API key; never back them up. -->
         <exclude domain="sharedpref" path="pocket_node_prefs.xml"/>
+        <exclude domain="sharedpref" path="pocket_node_secret_prefs.xml"/>
         <!-- TODO: Use <include> and <exclude> to control what is backed up.
         <include .../>
         <exclude .../>
@@ -28,5 +29,6 @@
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="pocket_node_prefs.xml"/>
+        <exclude domain="sharedpref" path="pocket_node_secret_prefs.xml"/>
     </device-transfer>
 </data-extraction-rules>

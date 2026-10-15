@@ -26,5 +26,9 @@ jobs:
           distribution: 'temurin'
           java-version: '27'
       - uses: gradle/actions/setup-gradle@v6
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest
+      - name: Lint
+        run: ./gradlew :app:lintDebug
       - name: Build
         run: ./gradlew assembleRelease

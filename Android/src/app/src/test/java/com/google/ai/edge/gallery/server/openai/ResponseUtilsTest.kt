@@ -88,7 +88,7 @@ class ResponseUtilsTest {
   @Test
   fun stopFilterWithNoStopsIsPassthrough() {
     val f = StopSequenceFilter(emptyList())
-    assertEquals("abc", f.feed("abc"))
+    assertEquals("abc", f.feed("abc") + f.flush())
   }
 
   @Test

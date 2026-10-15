@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="pocket_node_title">Servidor Pocket Node</string>
+  <string name="pocket_node_notification_title">Pocket Node está activo</string>
+  <string name="pocket_node_notification_text">API en http://%1$s/v1</string>
+  <string name="pocket_node_stop">Detener</string>
+  <string name="pocket_node_close">Cerrar</string>
+  <string name="pocket_node_copy">Copiar</string>
+  <string name="pocket_node_copied">Copiado</string>
+  <string name="pocket_node_tab_status">Estado</string>
+  <string name="pocket_node_tab_models">Modelos</string>
+  <string name="pocket_node_tab_security">Seguridad</string>
+  <string name="pocket_node_tab_activity">Actividad</string>
+
+  <string name="pocket_node_running">Servidor activo</string>
+  <string name="pocket_node_stopped">Servidor detenido</string>
+  <string name="pocket_node_start">Iniciar servidor</string>
+  <string name="pocket_node_stop_server">Detener servidor</string>
+  <string name="pocket_node_start_hint">Los modelos se cargan en la primera petición que los necesita.</string>
+  <string name="pocket_node_address">URL base para tus clientes</string>
+  <string name="pocket_node_no_lan">No hay red local: conéctate a Wi-Fi o usa el hotspot para acceder desde otros equipos.</string>
+  <string name="pocket_node_port">Puerto</string>
+  <string name="pocket_node_port_hint">1024–65535. Se aplica al reiniciar el servidor.</string>
+  <string name="pocket_node_port_invalid">El puerto debe estar entre 1024 y 65535.</string>
+  <string name="pocket_node_loaded_models">Modelos en memoria</string>
+  <string name="pocket_node_none">Ninguno</string>
+  <string name="pocket_node_free_ram">RAM libre: %1$s</string>
+  <string name="pocket_node_quick_test">Prueba rápida</string>
+  <string name="pocket_node_quick_test_hint">Ejecútalo desde otro equipo de la misma red.</string>
+
+  <string name="pocket_node_models_intro">Elige qué modelo responde cada tipo de petición. Un cliente aún puede elegir un modelo por nombre en el campo "model".</string>
+  <string name="pocket_node_automatic">Automático</string>
+  <string name="pocket_node_not_downloaded">sin descargar</string>
+  <string name="pocket_node_not_downloaded_warning">Este modelo aún no está descargado. Descárgalo primero desde la galería.</string>
+  <string name="pocket_node_role_chat">Chat y Responses</string>
+  <string name="pocket_node_role_chat_desc">/v1/chat/completions y /v1/responses</string>
+  <string name="pocket_node_role_completions">Completions de texto</string>
+  <string name="pocket_node_role_completions_desc">/v1/completions. Automático usa el modelo de chat.</string>
+  <string name="pocket_node_role_stt">Voz a texto</string>
+  <string name="pocket_node_role_stt_desc">/v1/audio/transcriptions y translations. Requiere un modelo con audio.</string>
+  <string name="pocket_node_role_vision">Visión</string>
+  <string name="pocket_node_role_vision_desc">Peticiones de chat con imágenes. Requiere un modelo con imágenes. Automático usa el modelo de chat.</string>
+  <string name="pocket_node_role_router">Router (modelo de decisión)</string>
+  <string name="pocket_node_role_router_desc">Un modelo pequeño que elige el mejor modelo cuando el cliente envía model "auto". Sin él, "auto" usa los modelos por defecto.</string>
+  <string name="pocket_node_tts_title">Texto a voz</string>
+  <string name="pocket_node_tts_desc">/v1/audio/speech usa el motor de voz de Android y devuelve WAV.</string>
+  <string name="pocket_node_tts_language">Etiqueta de idioma (p. ej. es-MX). Vacío = idioma del dispositivo</string>
+  <string name="pocket_node_tts_rate">Velocidad de voz: %1$s×</string>
+  <string name="pocket_node_aliases_title">Alias de modelos</string>
+  <string name="pocket_node_aliases_desc">Haz que otros nombres apunten a un modelo, uno por línea: gpt-4o=Qwen3.5-4B</string>
+  <string name="pocket_node_aliases_save">Guardar alias</string>
+  <string name="pocket_node_allowlist_title">Lista de modelos</string>
+  <string name="pocket_node_allowlist_desc">Carga tu propio model_allowlist.json para añadir o reemplazar los modelos ofrecidos aquí.</string>
+  <string name="pocket_node_allowlist_import">Importar lista de modelos</string>
+  <string name="pocket_node_allowlist_ok">Lista de modelos importada.</string>
+
+  <string name="pocket_node_api_key">API key</string>
+  <string name="pocket_node_api_key_hint">Vacía significa que cualquiera en la red puede usar el servidor.</string>
+  <string name="pocket_node_generate">Generar</string>
+  <string name="pocket_node_show">Mostrar</string>
+  <string name="pocket_node_hide">Ocultar</string>
+  <string name="pocket_node_cors">Permitir apps de navegador (CORS)</string>
+  <string name="pocket_node_cors_desc">Necesario para páginas web que llaman a la API desde otro origen.</string>
+  <string name="pocket_node_save">Guardar</string>
+  <string name="pocket_node_saved_restart">Guardado. Reinicia el servidor para aplicar.</string>
+  <string name="pocket_node_saved">Guardado.</string>
+
+  <string name="pocket_node_activity_empty">Aún no hay peticiones.</string>
+  <string name="pocket_node_activity_clear">Limpiar</string>
+  <string name="pocket_node_activity_copy_all">Copiar registro</string>
+  <string name="pocket_node_activity_summary">%1$d peticiones · %2$d errores</string>
+  <string name="pocket_node_download">Descargar</string>
+  <string name="pocket_node_badge_es">ES</string>
+  <string name="pocket_node_badge_rec">REC</string>
+</resources>

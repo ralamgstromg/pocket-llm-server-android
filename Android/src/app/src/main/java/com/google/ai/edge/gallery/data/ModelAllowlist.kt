@@ -63,6 +63,14 @@ data class AllowedModel(
   val url: String? = null,
   val socToModelFiles: Map<String, SocModelFile>? = null,
   val runtimeType: RuntimeType? = null,
+  /** BCP-47 language codes the model handles well (e.g. "es", "en"). */
+  val languages: List<String>? = null,
+  /** Roles this model is recommended for in the Pocket Node server: chat, stt, router, vision. */
+  val recommendedRoles: List<String>? = null,
+  /** Why the server cannot run this model as-is (shown instead of offering it as usable). */
+  val servingNote: String? = null,
+  /** How the model writes tool calls as text: native, hermes, mistral, pythonic or json. */
+  val toolFormat: String? = null,
 ) {
   fun toModel(): Model {
     // Construct HF download url.
@@ -188,6 +196,10 @@ data class AllowedModel(
       localModelFilePathOverride = localModelFilePathOverride ?: "",
       isLlm = isLlmModel,
       runtimeType = runtimeType ?: RuntimeType.LITERT_LM,
+      languages = languages ?: listOf(),
+      recommendedRoles = recommendedRoles ?: listOf(),
+      servingNote = servingNote ?: "",
+      toolFormat = toolFormat ?: "",
     )
   }
 

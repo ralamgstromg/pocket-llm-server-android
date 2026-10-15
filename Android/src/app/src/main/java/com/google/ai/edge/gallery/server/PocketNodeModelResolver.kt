@@ -22,7 +22,7 @@ object PocketNodeModelResolver {
         }
 
         val models = allowlist.models
-            .filter { it.disabled != true }
+            .filter { it.disabled != true && it.modelFile.endsWith(".litertlm") }
             .map { allowed ->
                 val m = allowed.toModel()
                 m.preProcess()
@@ -33,13 +33,59 @@ object PocketNodeModelResolver {
         return models
     }
 
-    fun findModelByNameOrId(context: Context, query: String): Model? {
-        if (query.isBlank()) return null
-        val models = getAllModels(context)
-        // Exact matches first, so "Qwen3.5-4B" never resolves to a model whose name it merely contains.
-        return models.find { m ->
-            m.name.equals(query, ignoreCase = true) || m.downloadFileName.equals(query, ignoreCase = true)
-        } ?: models.filter { m -> query.contains(m.name, ignoreCase = true) }.maxByOrNull { it.name.length }
+    fun findModelByNameOrId(context: Context, query: String): Model? =
+        ModelMatching.find(
+            items = getAllModels(context),
+            query = query,
+            aliases = PocketNodeState.slots?.aliases().orEmpty(),
+            name = { it.name },
+            fileName = { it.downloadFileName },
+        )
+
+    fun isDownloaded(context: Context, model: Model): Boolean =
+        File(model.getPath(context)).let { it.exists() && it.length() > 0 }
+
+    fun supportsAudio(model: Model): Boolean = model.llmSupportAudio || model.bestForTaskIds.contains("llm_ask_audio")
+
+    /** Forces the allowlist to be read again (after an import or a disk edit). */
+    fun invalidateCache() {
+        cachedModels = null
+    }
+
+    /**
+     * Saves a user-supplied allowlist as the on-device override and reloads it.
+     * Returns null on success, or the reason it was rejected.
+     */
+    fun importAllowlist(context: Context, json: String): String? {
+        val parsed = try {
+            Gson().fromJson(json, ModelAllowlist::class.java)
+        } catch (e: Exception) {
+            return "Invalid JSON: ${e.message}"
+        }
+        if (parsed?.models.isNullOrEmpty()) return "The model list has no models."
+        val dir = context.getExternalFilesDir(null) ?: return "External storage is not available."
+        File(dir, "model_allowlist.json").writeText(json)
+        invalidateCache()
+        return null
+    }
+
+    /**
+     * Picks the model for [role]. Order: the model named in the request, the role's slot, the chat
+     * slot, the model the in-app screens last loaded, then any downloaded model that fits.
+     */
+    fun pick(context: Context, role: ModelRole, requested: String, needsAudio: Boolean = false, needsImage: Boolean = false): Model? {
+        val all = getAllModels(context)
+        val fits: (Model) -> Boolean = { (!needsAudio || supportsAudio(it)) && (!needsImage || it.llmSupportImage) }
+        findModelByNameOrId(context, requested)?.let { return it }
+        val slots = PocketNodeState.slots
+        for (name in listOfNotNull(slots?.effective(role), slots?.get(ModelRole.CHAT))) {
+            if (name.isEmpty()) continue
+            ModelMatching.find(all, name, emptyMap(), { it.name }, { it.downloadFileName })?.takeIf(fits)?.let { return it }
+        }
+        val loaded = if (needsAudio) PocketNodeState.activeAudioModel else PocketNodeState.activeChatModel
+        loaded?.takeIf(fits)?.let { return it }
+        val candidates = all.filter(fits)
+        return candidates.find { isDownloaded(context, it) } ?: candidates.firstOrNull()
     }
 
     private fun readAllowlist(context: Context): ModelAllowlist? {

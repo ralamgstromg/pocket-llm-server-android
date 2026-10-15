@@ -101,8 +101,14 @@ class ChatRequestParserTest {
   }
 
   @Test
-  fun nGreaterThanOneIsInvalid() {
-    assertInvalid("""{"n":2,"messages":[{"role":"user","content":"x"}]}""", "n")
+  fun nOutOfRangeIsInvalid() {
+    assertInvalid("""{"n":0,"messages":[{"role":"user","content":"x"}]}""", "n")
+    assertInvalid("""{"n":9,"messages":[{"role":"user","content":"x"}]}""", "n")
+  }
+
+  @Test
+  fun nGreaterThanOneWithStreamIsInvalid() {
+    assertInvalid("""{"n":2,"stream":true,"messages":[{"role":"user","content":"x"}]}""", "n")
   }
 
   @Test

@@ -39,6 +39,8 @@ data class ChatCompletionRequest(
   @SerialName("parallel_tool_calls") val parallelToolCalls: Boolean? = null,
   @SerialName("response_format") val responseFormat: JsonObject? = null,
   @SerialName("reasoning_effort") val reasoningEffort: String? = null,
+  /** Non-standard: opt-in to server-executed skills. Boolean, or list of skill names. */
+  @SerialName("x_pocket_skills") val xPocketSkills: JsonElement? = null,
 )
 
 @Serializable
@@ -87,6 +89,7 @@ data class ChatCompletionResponse(
   @EncodeDefault val `object`: String = "chat.completion",
   val created: Long,
   val model: String,
+  @SerialName("system_fingerprint") val systemFingerprint: String? = "fp_pocket_node",
   val choices: List<ChatChoice>,
   val usage: Usage? = null,
 )
@@ -155,6 +158,20 @@ data class ModelObject(
   @SerialName("owned_by") val ownedBy: String,
   /** Non-standard: whether the model file is present on the device. */
   val downloaded: Boolean? = null,
+  /** Non-standard: Pocket Node details (roles the model is assigned to, capabilities). */
+  @SerialName("x_pocket") val xPocket: PocketModelInfo? = null,
+)
+
+@Serializable
+data class PocketModelInfo(
+  val roles: List<String> = emptyList(),
+  val languages: List<String> = emptyList(),
+  @SerialName("serving_note") val servingNote: String? = null,
+  @SerialName("tool_format") val toolFormat: String? = null,
+  val audio: Boolean = false,
+  val image: Boolean = false,
+  val thinking: Boolean = false,
+  @SerialName("size_bytes") val sizeBytes: Long = 0,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -178,6 +195,16 @@ data class SkillList(
 )
 
 @Serializable data class TranscriptionResponse(val text: String)
+
+/** `/v1/audio/speech` request. */
+@Serializable
+data class SpeechRequest(
+  val model: String = "",
+  val input: String = "",
+  val voice: String? = null,
+  @SerialName("response_format") val responseFormat: String? = null,
+  val speed: Double? = null,
+)
 
 @Serializable data class ErrorResponse(val error: ErrorDetail)
 
@@ -210,3 +237,15 @@ class OpenAiException(
       }
   }
 }
+
+/** Non-standard `GET /v1/audio/voices` entry: a voice of the Android speech engine. */
+@Serializable
+data class VoiceObject(val id: String, val language: String, val quality: Int, @SerialName("network_required") val networkRequired: Boolean)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class VoiceList(@EncodeDefault val `object`: String = "list", val data: List<VoiceObject>)
+
+/** `response_format=verbose_json` of the transcription endpoint (the fields a local model can fill). */
+@Serializable
+data class VerboseTranscription(val task: String = "transcribe", val language: String? = null, val text: String)
