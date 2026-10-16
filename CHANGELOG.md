@@ -4,6 +4,13 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Log de operaciones de la API con exportación y uso compartido
+- `server/PocketNodeLogger.kt`: registro en tiempo real de todas las operaciones del servidor (`start`, `stop`, `GET /`, `POST /v1/chat/completions`, `POST /v1/audio/transcriptions`) con marca de tiempo, código HTTP, latencia (`ms`), modelo utilizado y detalle de la operación o error.
+- Persistencia en `cacheDir/logs/pocket_node_api.log` y buffer en memoria (hasta 500 entradas), con interruptor activo/inactivo guardado en `SharedPreferences`.
+- `res/xml/file_paths.xml`: añade `<cache-path name="server_logs" path="logs/" />` al `FileProvider` para compartir el archivo `.log` con otras aplicaciones (`Intent.ACTION_SEND`).
+- `server/PocketNodeServerDialog.kt`: nueva sección **Log de Operaciones API** con interruptor, vista en vivo desplazable y botones **Compartir** (con otras apps), **Exportar** (`CreateDocument`) y **Limpiar**.
+- `PocketNodeLoggerTest`: pruebas unitarias del registro, desactivación y formato de exportación.
+
 ### Nombre del modelo en el test de rutas (`feat/test-shows-model-name`)
 - `PocketNodeServer`: añade la cabecera diagnóstica `X-Model-Name` (`MODEL_HEADER`) justo tras resolver el modelo en `/v1/chat/completions` y `/v1/audio/transcriptions` (saneada a ASCII imprimible mediante `headerSafe`) e incluye el campo `model` en `ChatResponse`.
 - `PocketNodeApiTester`: resuelve el nombre del modelo mediante `resolveModelName` (cabecera `X-Model-Name`, campo JSON `model` o fallback al modelo activo/preferido en `PocketNodeState`) y lo guarda en `ApiTestResult.model`.

@@ -3,7 +3,10 @@ package com.google.ai.edge.gallery.server
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,8 +74,19 @@ fun PocketNodeServerDialog(
     var isTestingApis by remember { mutableStateOf(false) }
     var apiTestResults by remember { mutableStateOf<List<ApiTestResult>>(emptyList()) }
 
+    val exportLogsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            PocketNodeLogger.exportToUri(context, uri)
+                .onSuccess { statusMessage = "✅ Log exportado correctamente." }
+                .onFailure { e -> statusMessage = "❌ Error al exportar log: ${e.message}" }
+        }
+    }
+
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
+        PocketNodeLogger.loadPreferences(context)
         if (selectedChatModelName.isEmpty() && allModels.isNotEmpty()) {
             selectedChatModelName = PocketNodeState.preferredChatModelName.ifEmpty { allModels.first().name }
         }
@@ -428,6 +443,126 @@ fun PocketNodeServerDialog(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // API Operation Logs section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Log de Operaciones API",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                        )
+                        Text(
+                            text = "${PocketNodeLogger.entries.size} operaciones registradas",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = PocketNodeLogger.isLoggingEnabled,
+                        onCheckedChange = { enabled ->
+                            PocketNodeLogger.setLoggingEnabled(context, enabled)
+                        },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 80.dp, max = 180.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    val logEntries = PocketNodeLogger.entries
+                    if (logEntries.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(
+                                text = if (PocketNodeLogger.isLoggingEnabled) {
+                                    "Sin operaciones registradas aún."
+                                } else {
+                                    "Log de operaciones desactivado."
+                                },
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .verticalScroll(rememberScrollState())
+                                .horizontalScroll(rememberScrollState()),
+                        ) {
+                            logEntries.takeLast(50).asReversed().forEach { entry ->
+                                Text(
+                                    text = entry.formatLine(),
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp,
+                                    color = if (entry.statusCode >= 400) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        enabled = PocketNodeLogger.entries.isNotEmpty(),
+                        onClick = {
+                            PocketNodeLogger.shareLogs(context)
+                                .onFailure { e -> statusMessage = "❌ Error al compartir log: ${e.message}" }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Text("Compartir", fontSize = 12.sp)
+                    }
+                    OutlinedButton(
+                        enabled = PocketNodeLogger.entries.isNotEmpty(),
+                        onClick = {
+                            exportLogsLauncher.launch(PocketNodeLogger.defaultExportFileName())
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Text("Exportar", fontSize = 12.sp)
+                    }
+                    TextButton(
+                        enabled = PocketNodeLogger.entries.isNotEmpty(),
+                        onClick = {
+                            PocketNodeLogger.clear(context)
+                            statusMessage = "🧹 Log de operaciones limpiado."
+                        },
+                    ) {
+                        Text("Limpiar", fontSize = 12.sp)
+                    }
                 }
             }
         }

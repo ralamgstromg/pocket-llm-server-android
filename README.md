@@ -18,6 +18,9 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
     *   **Chat / Completions Model**: Dedicated model selector for text generation.
     *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
     *   **Persistent Preferences**: Model choices are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
+*   **API Operation Logging, Export & Share**:
+    *   Real-time operation log (`PocketNodeLogger`) capturing timestamps, routes, HTTP status codes, latency (`ms`), serving model name, and payload/timing details.
+    *   Toggle logging on/off, view recent requests live in **Pocket Node Server**, **Export** logs to a `.log` file (`CreateDocument`), or **Share** logs directly with other apps (Email, WhatsApp, Telegram, Drive) via `FileProvider`.
 *   **Local Allowlist Asset Bundling**: Bundles `assets/model_allowlists/1_0_11.json` inside the APK assets. Models defined in local allowlists (like Whisper-Large-V3-Turbo) load instantly in the app's download manager without depending on internet GitHub raw files.
 *   **OpenAI-Compatible Schema**: Designed to cleanly integrate with your existing scripts, Python backends, and low-code wrappers (like `n8n`) using standard JSON / Multipart schemas.
 *   **Speech-to-Text (STT) & Whisper Support**: Optimized for `litert-community/whisper-large-v3-turbo` (`whisper_large_v3_turbo_30s_i4.tflite`) and multimodal LiteRT-LM models (e.g., Gemma 3n / Gemma 4), supporting accurate Spanish (`language=es`) and multilingual audio transcription.
@@ -123,18 +126,26 @@ Behaviour and limits:
 
 ---
 
-## 🧪 Testing the API routes from the app
+## 🧪 Testing the API routes & Operation Logs
 
+### Route Self-Tests
 The **Probar todas las rutas** button is always visible in **Pocket Node Server**. It is enabled once the server is running. The app calls each route on `127.0.0.1:8080` and shows a ✅ or ❌ with the HTTP code, latency, serving model name, and a short detail for:
 - `GET /`: expects the health text.
 - `POST /v1/chat/completions`: expects a non-empty `choices[0].message.content` and shows the active chat model (`Modelo: <name>`).
-- `POST /v1/audio/transcriptions`: sends one second of silence, expects a `text` field, and shows the active STT model (`Modelo: <name>`).
+- `POST /v1/audio/transcriptions`: sends one second of silence,, expects a `text` field, and shows the active STT model (`Modelo: <name>`).
 
-Diagnostic response headers (outside the OpenAI-compatible API):
+DiagnosticDiagnostic response headersheaders ((outside the OpenAI-compatible API):
 - `X-Model-Name`: Sent on `/v1/chat/completions` and `/v1/audio/transcriptions` with the printable-ASCII sanitized name of the model that served the request (`headerSafe`).
 - `X-Whisper-Timings`: Sent on `/v1/audio/transcriptions` when using Whisper, containing the timing breakdown (`mel=...ms enc=...ms dec=...ms (... steps)`), also displayed in the dialog row.
 
 The app allows cleartext HTTP only for `localhost` and `127.0.0.1` (`res/xml/network_security_config.xml`), so the test can run without weakening the rest of the network policy.
+
+### API Operation Log (`PocketNodeLogger`)
+Below the route test section in **Pocket Node Server**, the **Log de Operaciones API** section records every server start/stop event and HTTP request (`GET /`, `POST /v1/chat/completions`, `POST /v1/audio/transcriptions`) with timestamp, HTTP status code, latency (`ms`), model name, and operation details:
+- **Switch**: Enable or disable operation logging at any time (persisted in `SharedPreferences`).
+- **Compartir**: Shares `pocket_node_api.log` (`cacheDir/logs/pocket_node_api.log`) and its formatted text via Android's Share Sheet (`Intent.ACTION_SEND` + `FileProvider`) to any app (Email, WhatsApp, Telegram, Drive, etc.).
+- **Exportar**: Saves the log file (`pocket-node-api-<timestamp>.log`) to device storage via Android's document creator (`ActivityResultContracts.CreateDocument`).
+- **Limpiar**: Clears both in-memory entries and the cached log file.
 
 ---
 
