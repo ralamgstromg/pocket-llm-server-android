@@ -415,6 +415,14 @@ fun PocketNodeServerDialog(
                         fontSize = 13.sp,
                         color = if (result.ok) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
                     )
+                    result.model?.let { model ->
+                        Text(
+                            text = "Modelo: $model",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     Text(
                         text = result.detail,
                         fontSize = 12.sp,

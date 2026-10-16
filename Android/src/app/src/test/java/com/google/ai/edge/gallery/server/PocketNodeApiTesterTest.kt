@@ -55,4 +55,16 @@ class PocketNodeApiTesterTest {
     fun checkTranscription_missingTextFails() {
         assertNotNull(PocketNodeApiTester.checkTranscription(200, """{"other":1}""", null).error)
     }
+
+    @Test
+    fun headerSafe_keepsPrintableAsciiNames() {
+        assertEquals("Gemma-4-E2B-it", headerSafe("Gemma-4-E2B-it"))
+        assertEquals("Whisper large v3", headerSafe("Whisper large v3"))
+    }
+
+    @Test
+    fun headerSafe_dropsLineBreaksAndNonAscii() {
+        assertEquals("ModeloNombre", headerSafe("Modelo\r\nNombre"))
+        assertEquals("Qwen3-0.6B", headerSafe("Qwen3-0.6B\u00e9\u0000"))
+    }
 }

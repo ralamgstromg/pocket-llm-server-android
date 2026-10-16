@@ -19,6 +19,8 @@ data class ApiTestResult(
     val httpCode: Int?,
     val millis: Long,
     val detail: String,
+    /** Model that served the request, or null when the route does not use a model. */
+    val model: String? = null,
 )
 
 /** Outcome of checking one response. [error] is null when the route behaves as documented. */
@@ -79,7 +81,7 @@ object PocketNodeApiTester {
         }
     }
 
-    private class HttpReply(val code: Int, val body: String, val timings: String?)
+    private class HttpReply(val code: Int, val body: String, val timings: String?, val model: String?)
 
     private fun testRoute(
         route: String,
@@ -99,6 +101,7 @@ object PocketNodeApiTester {
             httpCode = reply.code,
             millis = System.currentTimeMillis() - start,
             detail = verdict.error ?: verdict.info,
+            model = reply.model,
         )
     }
 
@@ -133,7 +136,7 @@ object PocketNodeApiTester {
             val code = connection.responseCode
             val stream = if (code >= 400) connection.errorStream else connection.inputStream
             val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            return HttpReply(code, text, connection.getHeaderField(TIMINGS_HEADER))
+            return HttpReply(code, text, connection.getHeaderField(TIMINGS_HEADER), connection.getHeaderField(MODEL_HEADER))
         } finally {
             connection.disconnect()
         }

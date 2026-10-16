@@ -49,6 +49,12 @@ data class TranscriptionResponse(val text: String)
 /** Diagnostic header with the Whisper timing breakdown. Not part of the OpenAI-compatible API. */
 const val TIMINGS_HEADER = "X-Whisper-Timings"
 
+/** Diagnostic header with the model that served the request. Not part of the OpenAI-compatible API. */
+const val MODEL_HEADER = "X-Model-Name"
+
+/** Keeps only printable ASCII so any model name can be sent as a header value. */
+internal fun headerSafe(value: String): String = value.filter { it.code in 0x20..0x7E }
+
 private class WhisperOutput(val text: String, val timings: WhisperTimings?)
 
 class PocketNodeServer {
@@ -91,6 +97,7 @@ class PocketNodeServer {
                                 return@post
                             }
 
+                            call.response.headers.append(MODEL_HEADER, headerSafe(model.name))
                             val fullResponse = executeModelInference(model, prompt)
                             val reply = ChatResponse(
                                 id = "chatcmpl-${System.currentTimeMillis()}",
@@ -175,6 +182,7 @@ class PocketNodeServer {
                                 val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
                                 sanitizeSpokenText(fullResponse)
                             }
+                            call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
                             whisperTimings?.let { call.response.headers.append(TIMINGS_HEADER, it.toHeaderValue()) }
                             if (responseFormatParam.equals("text", ignoreCase = true)) {
                                 call.respondText(cleanText, ContentType.Text.Plain)

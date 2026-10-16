@@ -13,3 +13,20 @@ After you've created a developer application:
 ## Build the APK from the command line
 
 Run `scripts/build-apk.sh` from the repo root. It installs JDK 21 and the Android SDK components if they are missing (Linux only) and builds the release APK. Use `--debug` for the debug APK. See the README section "Compiling & Building the APK" for the manual steps.
+
+## Server Architecture (`com.google.ai.edge.gallery.server`)
+
+- **`PocketNodeService`**: Foreground service keeping the Ktor server alive and preloading selected chat/audio models on start.
+- **`PocketNodeServer`**: Embedded Ktor CIO server on port `8080` exposing `GET /`, `POST /v1/chat/completions`, and `POST /v1/audio/transcriptions`. Emits `X-Model-Name` and `X-Whisper-Timings` diagnostic headers.
+- **`PocketNodeState`**: Singleton state & `SharedPreferences` manager isolating `activeChatModel` and `activeAudioModel` (`RuntimeType.TFLITE_WHISPER` is never assigned to chat).
+- **`PocketNodeInference`**: Unified LiteRT-LM loader (`ensureLoaded`) with GPU-first initialization and automatic CPU fallback.
+- **`PocketNodeModelResolver`**: Merges local disk `model_allowlist.json` with bundled `assets/model_allowlists/1_0_11.json`.
+- **`PocketNodeApiTester` & `PocketNodeServerDialog`**: Self-test runner against `127.0.0.1:8080` and Compose configuration/diagnostics UI.
+- **`whisper/` (`WhisperEngine`, `WhisperFeatureExtractor`, `WhisperTokenizer`)**: On-device LiteRT 2.1.0 (`tflite_whisper`) pipeline for `Whisper-Large-V3-Turbo-i4` with 128-mel Slaney spectrogram extraction and BPE decoding.
+
+## Testing, Code Indexing & Security Verification
+
+- **Unit Tests**: Run `JAVA_HOME=/path/to/jdk-21 ./gradlew testDebugUnitTest` inside `Android/src` (covers `PocketNodeApiTesterTest`, `WhisperFeatureExtractorTest`, `WhisperTokenizerTest`).
+- **CodeGraph**: Run `codegraph sync` at the start and end of tasks to keep `.codegraph/` synchronized.
+- **Graphify**: Run `graphify extract . --code-only` and `graphify cluster-only .` to update `graphify-out/` artifacts.
+- **Security Scan**: Run `trivy fs --scanners vuln,secret,misconfig .` to verify zero leaked secrets or misconfigurations.
