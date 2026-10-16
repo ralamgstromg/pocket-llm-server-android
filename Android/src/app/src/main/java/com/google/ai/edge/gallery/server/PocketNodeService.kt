@@ -52,7 +52,7 @@ class PocketNodeService : Service() {
             // Create the persistent notification required by Android for Foreground Services
             val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("AI Pocket Node Active")
-                .setContentText("Local HTTP server running on port 8080")
+                .setContentText("Local HTTP server running on port ${PocketNodeServer.PORT}")
                 .setSmallIcon(android.R.drawable.ic_dialog_info) 
                 .build()
 

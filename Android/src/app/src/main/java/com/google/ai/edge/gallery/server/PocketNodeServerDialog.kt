@@ -1,5 +1,6 @@
 package com.google.ai.edge.gallery.server
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.background
@@ -20,10 +21,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
+import com.google.ai.edge.gallery.data.Model
+import com.google.ai.edge.gallery.data.ModelDownloadStatusType
+import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 import kotlinx.coroutines.launch
 import java.io.File
+
+private fun Model.isDownloaded(context: Context): Boolean {
+    val file = File(getPath(context))
+    return file.exists() && file.length() > 0L
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,8 +48,10 @@ fun PocketNodeServerDialog(
         uiState.tasks.flatMap { it.models }.distinctBy { it.name }
     }
 
+    // STT candidates: LLMs with audio support plus Whisper models, which are not part of any task list.
     val audioCapableModels = remember(allModels) {
-        allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") }
+        allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") } +
+            PocketNodeModelResolver.getAllModels(context).filter { it.isWhisperStt }
     }
 
     var selectedChatModelName by remember {
@@ -56,6 +66,9 @@ fun PocketNodeServerDialog(
 
     var isInitializing by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
+
+    var isTestingApis by remember { mutableStateOf(false) }
+    var apiTestResults by remember { mutableStateOf<List<ApiTestResult>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
@@ -131,7 +144,7 @@ fun PocketNodeServerDialog(
                             )
                             if (PocketNodeState.isServerRunning) {
                                 Text(
-                                    text = "http://localhost:8080",
+                                    text = "http://localhost:${PocketNodeServer.PORT}",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -231,7 +244,7 @@ fun PocketNodeServerDialog(
                                 onClick = {
                                     selectedAudioModelName = model.name
                                     audioDropdownExpanded = false
-                                    val matchedModel = allModels.find { it.name == model.name }
+                                    val matchedModel = audioCapableModels.find { it.name == model.name }
                                     if (matchedModel != null) {
                                         PocketNodeState.activeAudioModel = matchedModel
                                     }
@@ -239,6 +252,33 @@ fun PocketNodeServerDialog(
                                     PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
                                 }
                             )
+                        }
+                    }
+                }
+
+                // Whisper STT model: download status and progress (it is not listed in the Gallery tasks)
+                val sttModel = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }
+                if (sttModel != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    val downloadStatus = uiState.modelDownloadStatus[sttModel.name]
+                    if (downloadStatus?.status == ModelDownloadStatusType.IN_PROGRESS) {
+                        val progress = downloadStatus?.let {
+                            if (it.totalBytes > 0) it.receivedBytes.toFloat() / it.totalBytes else 0f
+                        } ?: 0f
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        val downloaded = sttModel.isDownloaded(context)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (downloaded) "✅ Modelo STT descargado" else "⚠️ Modelo STT no descargado",
+                                fontSize = 12.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (!downloaded) {
+                                TextButton(onClick = { modelManagerViewModel.downloadModel(task = null, model = sttModel) }) {
+                                    Text("Descargar")
+                                }
+                            }
                         }
                     }
                 }
@@ -253,7 +293,7 @@ fun PocketNodeServerDialog(
                         if (matchedChat != null) {
                             PocketNodeState.activeChatModel = matchedChat
                         }
-                        val matchedAudio = allModels.find { it.name == selectedAudioModelName }
+                        val matchedAudio = audioCapableModels.find { it.name == selectedAudioModelName }
                         if (matchedAudio != null) {
                             PocketNodeState.activeAudioModel = matchedAudio
                         }
@@ -264,7 +304,13 @@ fun PocketNodeServerDialog(
                         if (PocketNodeState.isServerRunning) {
                             context.stopService(intent)
                         } else {
-                            val targetModel = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel
+                            val pendingStt = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }
+                            if (pendingStt != null && !pendingStt.isDownloaded(context)) {
+                                statusMessage = "⚠️ Descarga el modelo STT '${pendingStt.name}' antes de iniciar el servidor."
+                                return@Button
+                            }
+                            // Whisper loads lazily on the first transcription request, so only the chat model is preloaded here.
+                            val targetModel = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel?.takeUnless { it.isWhisperStt }
                             if (targetModel != null && targetModel.instance == null) {
                                 val modelFile = File(targetModel.getPath(context))
                                 if (!modelFile.exists() || modelFile.length() == 0L) {
@@ -276,29 +322,22 @@ fun PocketNodeServerDialog(
                                 statusMessage = "⏳ Cargando modelo '${targetModel.name}' en memoria RAM/NPU..."
 
                                 scope.launch {
-                                    LlmChatModelHelper.initialize(
-                                        context = context,
-                                        model = targetModel,
-                                        supportImage = targetModel.llmSupportImage,
-                                        supportAudio = targetModel.llmSupportAudio,
-                                        onDone = { errorMsg ->
-                                            isInitializing = false
-                                            if (errorMsg.isEmpty()) {
-                                                statusMessage = "✅ Modelo cargado exitosamente."
-                                                try {
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                        context.startForegroundService(intent)
-                                                    } else {
-                                                        context.startService(intent)
-                                                    }
-                                                } catch (e: Exception) {
-                                                    statusMessage = "❌ Error iniciando servicio de servidor: ${e.message}"
-                                                }
+                                    val result = PocketNodeInference.initializeLlm(context, targetModel)
+                                    isInitializing = false
+                                    result.onSuccess { backend ->
+                                        statusMessage = "✅ Modelo cargado en ${backend.label}."
+                                        try {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                                context.startForegroundService(intent)
                                             } else {
-                                                statusMessage = "❌ Error cargando modelo: $errorMsg"
+                                                context.startService(intent)
                                             }
+                                        } catch (e: Exception) {
+                                            statusMessage = "❌ Error iniciando servicio de servidor: ${e.message}"
                                         }
-                                    )
+                                    }.onFailure { e ->
+                                        statusMessage = "❌ Error cargando modelo: ${e.message}"
+                                    }
                                 }
                             } else {
                                 try {
@@ -333,6 +372,54 @@ fun PocketNodeServerDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // API route tests: always visible so they can be found; enabled only while the server runs
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    enabled = PocketNodeState.isServerRunning && !isTestingApis && !isInitializing,
+                    onClick = {
+                        isTestingApis = true
+                        apiTestResults = emptyList()
+                        scope.launch {
+                            apiTestResults = PocketNodeApiTester.runAll()
+                            isTestingApis = false
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        text = if (isTestingApis) "Probando rutas..." else "Probar todas las rutas",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (!PocketNodeState.isServerRunning) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Inicia el servidor para probar sus rutas.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                apiTestResults.forEach { result ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "${if (result.ok) "✅" else "❌"} ${result.route}  ·  ${result.httpCode?.let { "HTTP $it" } ?: "sin respuesta"}  ·  ${result.millis} ms",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        color = if (result.ok) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = result.detail,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

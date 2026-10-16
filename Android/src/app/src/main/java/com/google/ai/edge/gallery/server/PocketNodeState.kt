@@ -3,6 +3,7 @@ package com.google.ai.edge.gallery.server
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import androidx.compose.runtime.setValue
 import com.google.ai.edge.gallery.data.Model
 
@@ -33,7 +34,7 @@ object PocketNodeState {
             activeAudioModel = activeChatModel
         } else if (activeAudioModel == null && activeChatModel?.llmSupportAudio == true) {
             activeAudioModel = activeChatModel
-        } else if (activeChatModel == null && activeAudioModel != null) {
+        } else if (activeChatModel == null && activeAudioModel != null && activeAudioModel?.isWhisperStt == false) {
             activeChatModel = activeAudioModel
         }
     }

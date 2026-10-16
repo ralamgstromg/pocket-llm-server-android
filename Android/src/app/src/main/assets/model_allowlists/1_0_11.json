@@ -85,7 +85,7 @@
         "topP": 0.95,
         "temperature": 1.0,
         "maxTokens": 4096,
-        "accelerators": "cpu,gpu"
+        "accelerators": "gpu,cpu"
       },
       "taskTypes": [
         "llm_chat",
@@ -113,7 +113,7 @@
         "topP": 0.95,
         "temperature": 1.0,
         "maxTokens": 4096,
-        "accelerators": "cpu,gpu"
+        "accelerators": "gpu,cpu"
       },
       "taskTypes": [
         "llm_chat",
@@ -309,6 +309,18 @@
       "bestForTaskTypes": [
         "llm_mobile_actions"
       ]
+    },
+    {
+      "name": "Whisper-Large-V3-Turbo-i4",
+      "modelId": "litert-community/whisper-large-v3-turbo",
+      "modelFile": "whisper_large_v3_turbo_30s_i4.tflite",
+      "description": "OpenAI Whisper large-v3-turbo quantized to int4 (LiteRT) for speech-to-text. Used only as the STT model of the Pocket Node API; it is not a chat model. Processes 30 s windows and needs the Whisper tokenizer bundled in the app.",
+      "sizeInBytes": 755273648,
+      "minDeviceMemoryInGb": 6,
+      "commitHash": "4e3af6a1597a54b6e47d2899cf4f6c39932b0b7e",
+      "runtimeType": "tflite_whisper",
+      "defaultConfig": {},
+      "taskTypes": []
     }
   ]
 }
