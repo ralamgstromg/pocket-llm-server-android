@@ -38,12 +38,27 @@ object PocketNodeApiTester {
     private const val CHAT_BODY = """{"messages":[{"role":"user","content":"Responde solo: ok"}]}"""
 
     suspend fun runAll(): List<ApiTestResult> = withContext(Dispatchers.IO) {
+        val fallbackChatModel = PocketNodeState.activeChatModel?.name
+            ?: PocketNodeState.preferredChatModelName.ifBlank { null }
+        val fallbackAudioModel = PocketNodeState.activeAudioModel?.name
+            ?: PocketNodeState.preferredAudioModelName.ifBlank { null }
+
         listOf(
-            testRoute("GET /", { get("/") }) { reply -> checkHealth(reply.code, reply.body) },
-            testRoute("POST /v1/chat/completions", { postJson("/v1/chat/completions", CHAT_BODY) }) { reply ->
+            testRoute("GET /", fallbackModel = null, send = { get("/") }) { reply ->
+                checkHealth(reply.code, reply.body)
+            },
+            testRoute(
+                "POST /v1/chat/completions",
+                fallbackModel = fallbackChatModel,
+                send = { postJson("/v1/chat/completions", CHAT_BODY) },
+            ) { reply ->
                 checkChat(reply.code, reply.body)
             },
-            testRoute("POST /v1/audio/transcriptions", { postAudio() }) { reply ->
+            testRoute(
+                "POST /v1/audio/transcriptions",
+                fallbackModel = fallbackAudioModel,
+                send = { postAudio() },
+            ) { reply ->
                 checkTranscription(reply.code, reply.body, reply.timings)
             },
         )
@@ -81,10 +96,20 @@ object PocketNodeApiTester {
         }
     }
 
+    /** Extracts the serving model name from the HTTP header, JSON body (`model` field), or configured fallback. */
+    internal fun resolveModelName(headerModel: String?, body: String, fallbackModel: String?): String? {
+        headerModel?.takeIf { it.isNotBlank() }?.let { return it }
+        val bodyModel = runCatching {
+            Json.parseToJsonElement(body).jsonObject["model"]?.jsonPrimitive?.content
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+        return bodyModel ?: fallbackModel?.takeIf { it.isNotBlank() }
+    }
+
     private class HttpReply(val code: Int, val body: String, val timings: String?, val model: String?)
 
     private fun testRoute(
         route: String,
+        fallbackModel: String?,
         send: () -> HttpReply,
         verify: (HttpReply) -> Verdict,
     ): ApiTestResult {
@@ -92,16 +117,24 @@ object PocketNodeApiTester {
         val reply = try {
             send()
         } catch (e: IOException) {
-            return ApiTestResult(route, false, null, System.currentTimeMillis() - start, "Sin respuesta: ${e.message}")
+            return ApiTestResult(
+                route = route,
+                ok = false,
+                httpCode = null,
+                millis = System.currentTimeMillis() - start,
+                detail = "Sin respuesta: ${e.message}",
+                model = fallbackModel?.takeIf { it.isNotBlank() },
+            )
         }
         val verdict = verify(reply)
+        val modelName = resolveModelName(reply.model, reply.body, fallbackModel)
         return ApiTestResult(
             route = route,
             ok = verdict.error == null,
             httpCode = reply.code,
             millis = System.currentTimeMillis() - start,
             detail = verdict.error ?: verdict.info,
-            model = reply.model,
+            model = modelName,
         )
     }
 

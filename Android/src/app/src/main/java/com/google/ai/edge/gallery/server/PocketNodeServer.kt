@@ -38,7 +38,7 @@ data class ChatRequest(val model: String = "", val messages: List<Message> = emp
 data class Message(val role: String, val content: String)
 
 @Serializable
-data class ChatResponse(val id: String, val choices: List<Choice>)
+data class ChatResponse(val id: String, val model: String = "", val choices: List<Choice>)
 
 @Serializable
 data class Choice(val message: Message)
@@ -101,6 +101,7 @@ class PocketNodeServer {
                             val fullResponse = executeModelInference(model, prompt)
                             val reply = ChatResponse(
                                 id = "chatcmpl-${System.currentTimeMillis()}",
+                                model = model.name,
                                 choices = listOf(Choice(Message("assistant", fullResponse)))
                             )
                             call.respond(reply)
@@ -151,6 +152,7 @@ class PocketNodeServer {
                                 return@post
                             }
 
+                            call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
                             var whisperTimings: WhisperTimings? = null
                             val cleanText = if (audioModel.isWhisperStt) {
                                 val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
@@ -182,7 +184,6 @@ class PocketNodeServer {
                                 val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
                                 sanitizeSpokenText(fullResponse)
                             }
-                            call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
                             whisperTimings?.let { call.response.headers.append(TIMINGS_HEADER, it.toHeaderValue()) }
                             if (responseFormatParam.equals("text", ignoreCase = true)) {
                                 call.respondText(cleanText, ContentType.Text.Plain)
@@ -384,4 +385,3 @@ class PocketNodeServer {
         return text
     }
 }
-

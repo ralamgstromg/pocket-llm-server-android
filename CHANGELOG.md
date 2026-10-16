@@ -5,10 +5,10 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 ## Unreleased
 
 ### Nombre del modelo en el test de rutas (`feat/test-shows-model-name`)
-- `PocketNodeServer`: añade la cabecera diagnóstica `X-Model-Name` (`MODEL_HEADER`) en `/v1/chat/completions` y `/v1/audio/transcriptions`, saneada a ASCII imprimible mediante `headerSafe`.
-- `PocketNodeApiTester`: captura `X-Model-Name` en `ApiTestResult.model`.
+- `PocketNodeServer`: añade la cabecera diagnóstica `X-Model-Name` (`MODEL_HEADER`) justo tras resolver el modelo en `/v1/chat/completions` y `/v1/audio/transcriptions` (saneada a ASCII imprimible mediante `headerSafe`) e incluye el campo `model` en `ChatResponse`.
+- `PocketNodeApiTester`: resuelve el nombre del modelo mediante `resolveModelName` (cabecera `X-Model-Name`, campo JSON `model` o fallback al modelo activo/preferido en `PocketNodeState`) y lo guarda en `ApiTestResult.model`.
 - `PocketNodeServerDialog`: muestra `Modelo: <nombre>` en cada fila de resultado del test de rutas cuando la ruta utiliza un modelo.
-- `PocketNodeApiTesterTest`: pruebas unitarias para `headerSafe` con nombres ASCII y filtrado de saltos de línea / caracteres no ASCII.
+- `PocketNodeApiTesterTest`: pruebas unitarias para `headerSafe` y `resolveModelName`.
 
 ### Correcciones del test de rutas
 - `PocketNodeApiTester`: las respuestas correctas de chat y audio se marcaban como ❌ porque el texto de éxito se trataba como error. Ahora los verificadores devuelven un `Verdict` y el éxito conserva su detalle.

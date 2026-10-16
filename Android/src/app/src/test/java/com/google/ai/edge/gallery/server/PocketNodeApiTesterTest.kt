@@ -8,7 +8,7 @@ import org.junit.Test
 
 class PocketNodeApiTesterTest {
 
-    private val chatOk = """{"id":"chatcmpl-1","choices":[{"message":{"role":"assistant","content":"ok"}}]}"""
+    private val chatOk = """{"id":"chatcmpl-1","model":"Gemma-4-E2B-it","choices":[{"message":{"role":"assistant","content":"ok"}}]}"""
 
     @Test
     fun checkHealth_passesOnDocumentedBody() {
@@ -66,5 +66,22 @@ class PocketNodeApiTesterTest {
     fun headerSafe_dropsLineBreaksAndNonAscii() {
         assertEquals("ModeloNombre", headerSafe("Modelo\r\nNombre"))
         assertEquals("Qwen3-0.6B", headerSafe("Qwen3-0.6B\u00e9\u0000"))
+    }
+
+    @Test
+    fun resolveModelName_prefersHeader_thenJsonBody_thenFallback() {
+        assertEquals(
+            "Header-Model",
+            PocketNodeApiTester.resolveModelName("Header-Model", chatOk, "Fallback-Model")
+        )
+        assertEquals(
+            "Gemma-4-E2B-it",
+            PocketNodeApiTester.resolveModelName(null, chatOk, "Fallback-Model")
+        )
+        assertEquals(
+            "Whisper-Large-V3-Turbo-i4",
+            PocketNodeApiTester.resolveModelName(null, """{"text":""}""", "Whisper-Large-V3-Turbo-i4")
+        )
+        assertNull(PocketNodeApiTester.resolveModelName(null, "Pocket Node AI is running!", null))
     }
 }
