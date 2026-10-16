@@ -21,6 +21,9 @@ data class ApiTestResult(
     val detail: String,
 )
 
+/** Outcome of checking one response. [error] is null when the route behaves as documented. */
+internal data class Verdict(val error: String?, val info: String = "OK")
+
 /** Calls each route of the local Pocket Node server and checks that it responds as documented. */
 object PocketNodeApiTester {
     private const val CONNECT_TIMEOUT_MS = 3_000
@@ -34,45 +37,54 @@ object PocketNodeApiTester {
 
     suspend fun runAll(): List<ApiTestResult> = withContext(Dispatchers.IO) {
         listOf(
-            testRoute("GET /", { get("/") }) { reply ->
-                when {
-                    reply.code != 200 -> "HTTP ${reply.code}: ${reply.body.take(200)}"
-                    reply.body.trim() != HEALTH_BODY -> "Cuerpo inesperado: ${reply.body.take(200)}"
-                    else -> null
-                }
-            },
+            testRoute("GET /", { get("/") }) { reply -> checkHealth(reply.code, reply.body) },
             testRoute("POST /v1/chat/completions", { postJson("/v1/chat/completions", CHAT_BODY) }) { reply ->
-                val content = runCatching {
-                    Json.parseToJsonElement(reply.body).jsonObject["choices"]!!.jsonArray[0]
-                        .jsonObject["message"]!!.jsonObject["content"]!!.jsonPrimitive.content
-                }.getOrNull()
-                when {
-                    reply.code != 200 -> "HTTP ${reply.code}: ${reply.body.take(200)}"
-                    content == null -> "Respuesta sin choices[0].message.content"
-                    content.contains(INFERENCE_ERROR_MARKER) -> content.take(200)
-                    else -> "Respuesta: ${content.take(200)}"
-                }
+                checkChat(reply.code, reply.body)
             },
             testRoute("POST /v1/audio/transcriptions", { postAudio() }) { reply ->
-                val text = runCatching {
-                    Json.parseToJsonElement(reply.body).jsonObject["text"]!!.jsonPrimitive.content
-                }.getOrNull()
-                when {
-                    reply.code != 200 -> "HTTP ${reply.code}: ${reply.body.take(200)}"
-                    text == null -> "Respuesta sin campo 'text'"
-                    text.contains(INFERENCE_ERROR_MARKER) -> text.take(200)
-                    else -> "Texto transcrito: ${text.ifEmpty { "(vacío, audio de silencio)" }.take(200)}"
-                }
+                checkTranscription(reply.code, reply.body, reply.timings)
             },
         )
     }
 
-    private class HttpReply(val code: Int, val body: String)
+    internal fun checkHealth(code: Int, body: String): Verdict = when {
+        code != 200 -> Verdict("HTTP $code: ${body.take(200)}")
+        body.trim() != HEALTH_BODY -> Verdict("Cuerpo inesperado: ${body.take(200)}")
+        else -> Verdict(null)
+    }
+
+    internal fun checkChat(code: Int, body: String): Verdict {
+        val content = runCatching {
+            Json.parseToJsonElement(body).jsonObject["choices"]!!.jsonArray[0]
+                .jsonObject["message"]!!.jsonObject["content"]!!.jsonPrimitive.content
+        }.getOrNull()
+        return when {
+            code != 200 -> Verdict("HTTP $code: ${body.take(200)}")
+            content == null -> Verdict("Respuesta sin choices[0].message.content")
+            content.contains(INFERENCE_ERROR_MARKER) -> Verdict(content.take(200))
+            else -> Verdict(null, "Respuesta: ${content.take(200)}")
+        }
+    }
+
+    internal fun checkTranscription(code: Int, body: String, timings: String?): Verdict {
+        val text = runCatching {
+            Json.parseToJsonElement(body).jsonObject["text"]!!.jsonPrimitive.content
+        }.getOrNull()
+        val timingInfo = timings?.let { " · tiempos: $it" }.orEmpty()
+        return when {
+            code != 200 -> Verdict("HTTP $code: ${body.take(200)}")
+            text == null -> Verdict("Respuesta sin campo 'text'")
+            text.contains(INFERENCE_ERROR_MARKER) -> Verdict(text.take(200))
+            else -> Verdict(null, "Texto transcrito: ${text.ifEmpty { "(vacío, audio de silencio)" }.take(200)}$timingInfo")
+        }
+    }
+
+    private class HttpReply(val code: Int, val body: String, val timings: String?)
 
     private fun testRoute(
         route: String,
         send: () -> HttpReply,
-        verify: (HttpReply) -> String?,
+        verify: (HttpReply) -> Verdict,
     ): ApiTestResult {
         val start = System.currentTimeMillis()
         val reply = try {
@@ -80,13 +92,13 @@ object PocketNodeApiTester {
         } catch (e: IOException) {
             return ApiTestResult(route, false, null, System.currentTimeMillis() - start, "Sin respuesta: ${e.message}")
         }
-        val error = verify(reply)
+        val verdict = verify(reply)
         return ApiTestResult(
             route = route,
-            ok = error == null,
+            ok = verdict.error == null,
             httpCode = reply.code,
             millis = System.currentTimeMillis() - start,
-            detail = error ?: "OK",
+            detail = verdict.error ?: verdict.info,
         )
     }
 
@@ -121,7 +133,7 @@ object PocketNodeApiTester {
             val code = connection.responseCode
             val stream = if (code >= 400) connection.errorStream else connection.inputStream
             val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            return HttpReply(code, text)
+            return HttpReply(code, text, connection.getHeaderField(TIMINGS_HEADER))
         } finally {
             connection.disconnect()
         }
