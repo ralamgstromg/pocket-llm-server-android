@@ -42,6 +42,7 @@ private fun Model.isDownloaded(context: Context): Boolean {
 }
 
 private val TOKEN_PRESETS = listOf(2048, 4096, 8000, 16384)
+private val IDLE_MINUTES_PRESETS = listOf(1, 3, 5, 15)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,7 +170,7 @@ fun PocketNodeServerDialog(
                             )
                             if (PocketNodeState.isServerRunning) {
                                 Text(
-                                    text = "http://localhost:${PocketNodeServer.PORT} · ${PocketNodeState.configuredMaxTokens} tokens",
+                                    text = "http://localhost:${PocketNodeServer.PORT} · ${PocketNodeState.configuredMaxTokens} tokens · hiberna ${PocketNodeState.configuredIdleMinutes}m",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -364,6 +365,37 @@ fun PocketNodeServerDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Configurable Idle Hibernation timeout (battery saver)
+                Text(
+                    text = "Hibernación en Reposo (Ahorro de Batería):",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    IDLE_MINUTES_PRESETS.forEach { mins ->
+                        FilterChip(
+                            selected = PocketNodeState.configuredIdleMinutes == mins,
+                            onClick = {
+                                PocketNodeState.savePreferences(
+                                    context = context,
+                                    chatModelName = selectedChatModelName,
+                                    audioModelName = selectedAudioModelName,
+                                    idleMinutes = mins,
+                                )
+                                PocketNodeInference.touchActivity(context)
+                                statusMessage = "🔋 Hibernación por inactividad ajustada a $mins min."
+                            },
+                            label = { Text("${mins}m", fontSize = 12.sp) },
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Action Toggle Button
@@ -424,7 +456,8 @@ fun PocketNodeServerDialog(
                                     }
                                 }
 
-                                if (audioModel != null && !sharedAudio) {
+                                val canPreloadBoth = chatModel == null || PocketNodeInference.hasEnoughRamForDualResidency(context)
+                                if (audioModel != null && !sharedAudio && canPreloadBoth) {
                                     statusMessage = "⏳ Cargando modelo STT '${audioModel.name}' en memoria..."
                                     val audioRes = withContext(Dispatchers.IO) {
                                         PocketNodeInference.preloadModel(context, audioModel, forAudio = true)

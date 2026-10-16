@@ -14,24 +14,27 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 *   **API on the Go**: Pocket Node exposes background network services on `http://YOUR_PHONE_IP:8080`:
     *   `POST /v1/chat/completions`: Text generation / chat completions.
     *   `POST /v1/audio/transcriptions`: Speech-to-Text (STT) audio transcription compatible with OpenAI.
-*   **Immediate Startup Model Preloading**: Both the active Chat model and Audio STT model (including Whisper) are loaded into RAM/GPU immediately when the HTTP server is enabled, eliminating cold-start latency on the first API call.
+*   **Immediate Startup Model Preloading**: Active models are loaded into RAM/GPU immediately when the HTTP server is enabled (with automatic low-RAM protection to avoid Android `zram` thrashing when two heavy models are selected), eliminating cold-start latency on the first API call.
 *   **Strict Per-Request Context Isolation**:
     *   Each API call runs in a fresh, disposable LiteRT-LM `Conversation` guarded by a global per-model `Mutex` with native cancellation (`cancelProcess()`), guaranteeing zero prompt or token leakage across requests.
     *   Separates `system`/`developer` instructions into native `ConversationConfig.systemInstruction`, strips injected control tags (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<ctrl...>`), and cleanly structures multi-turn history (`<historial_conversacion>` vs `<mensaje_actual_usuario>`).
 *   **8,000 Tokens by Default (Configurable in UI & API)**:
     *   Configured to **8,000 tokens** (`DEFAULT_MAX_TOKENS = 8000`) by default so long prompts and responses fit comfortably.
     *   Editable directly in **Pocket Node Server** (`256..32768`, with quick presets `2048`, `4096`, `8000`, `16384`) or per HTTP request via `"max_tokens"` in `POST /v1/chat/completions`.
-*   **GPU by Default, Low-Latency & Battery Optimization**:
+*   **GPU by Default, Low-Latency & Ultra Battery Optimization**:
     *   Automatically enables `Accelerator.GPU` by default whenever supported by the model (with automatic fallback to `CPU` if initialization fails).
     *   Applies a fast serving profile (`ENABLE_THINKING = false`, `topK = 16`, `topP = 0.85`, `temperature = 0.4`, `maxTokens = 8000`), persistent GPU shader cache (`cacheDir`), and balanced `2..4` XNNPACK threads for Whisper.
-    *   **Battery Saver**: Acquires `PARTIAL_WAKE_LOCK` only during active inference, hibernates idle models after 10 minutes of inactivity (auto-reloading on the next request), and releases all models from RAM/GPU when stopping the server.
+    *   **Battery Saver (Foreground & Background)**:
+        *   Allows the screen to turn off normally (`FLAG_KEEP_SCREEN_ON` removed) while `PocketNodeService` serves HTTP requests in the background.
+        *   **Engine Warm / Zero KV-Cache Idle**: Keeps the LiteRT-LM `Engine` warm in memory (`< 5 ms` conversation creation) while closing the default KV-cache `Conversation` whenever no request is active.
+        *   Acquires `PARTIAL_WAKE_LOCK` only during active inference, disables background Firebase telemetry/FCM wakeups, constrains Ktor CIO to `2` network threads, and hibernates idle models after **3 minutes** of inactivity by default (configurable in UI: `1m`, `3m`, `5m`, `15m`).
 *   **Spanish by Default (`es`)**:
     *   Chat/Completion LLMs initialize with a default Spanish system instruction (`DEFAULT_SPANISH_SYSTEM_PROMPT`).
     *   Audio transcriptions (`/v1/audio/transcriptions` and `WhisperEngine`) default to Spanish (`language=es`) when no language parameter is provided, skipping the extra language-detection decoder pass in Whisper.
 *   **Interactive Model Configuration UI**: Select your desired active models directly in the app before starting the HTTP server:
     *   **Chat / Completions Model**: Dedicated model selector for text generation.
     *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
-    *   **Persistent Preferences**: Model choices and token budget are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
+    *   **Persistent Preferences**: Model choices, token budget, and idle hibernation timeout are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
 *   **API Operation Logging, Export & Share**:
     *   Real-time operation log (`PocketNodeLogger`) capturing timestamps, routes, HTTP status codes, latency (`ms`), serving model name, and payload/timing details.
     *   Toggle logging on/off, view recent requests live in **Pocket Node Server**, **Export** logs to a `.log` file (`CreateDocument`), or **Share** logs directly with other apps (Email, WhatsApp, Telegram, Drive) via `FileProvider`.
@@ -50,8 +53,8 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 3. **Configure & Start Server**: Open the left-side navigation drawer, tap **Pocket Node Server** to open the server dialog:
    - Choose your **Chat / Completions Model**.
    - Choose your **Audio STT Model**.
-   - Adjust **Máximo de Tokens por Petición** (defaults to `8000`).
-   - Tap **Iniciar Servidor HTTP** to preload both models into memory and ignite the background service!
+   - Adjust **Máximo de Tokens por Petición** (defaults to `8000`) and **Hibernación en Reposo** (defaults to `3m`).
+   - Tap **Iniciar Servidor HTTP** to preload models into memory and ignite the background service!
 4. **Test it out**:
    - **Text Completion**:
      ```bash

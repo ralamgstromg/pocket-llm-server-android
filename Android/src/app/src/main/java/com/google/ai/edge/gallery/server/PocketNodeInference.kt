@@ -1,5 +1,6 @@
 package com.google.ai.edge.gallery.server
 
+import android.app.ActivityManager
 import android.content.Context
 import android.os.PowerManager
 import android.util.Log
@@ -49,9 +50,9 @@ internal data class ChatPromptContext(
  * - Enables GPU by default when supported by the model (with CPU fallback).
  * - Applies fast sampling/token defaults (8000 tokens default, configurable via UI or per-request `max_tokens`).
  * - Uses Spanish ("es") as the default language and system instruction.
- * - Isolates each HTTP inference into its own disposable LiteRT-LM [com.google.ai.edge.litertlm.Conversation]
- *   guarded by a global per-model [Mutex] so requests never mix context or tokens.
- * - Saves battery via on-demand WakeLocks during active inference and automatic idle model hibernation.
+ * - Keeps the LiteRT-LM [com.google.ai.edge.litertlm.Engine] warm with zero KV-cache buffers in idle (`closeIdleConversation`),
+ *   creating a disposable [com.google.ai.edge.litertlm.Conversation] (< 5 ms) only while a request is executing.
+ * - Saves battery via on-demand WakeLocks, memory pressure protection, and configurable idle hibernation (3m default).
  */
 object PocketNodeInference {
 
@@ -65,8 +66,8 @@ object PocketNodeInference {
     internal const val FAST_TOP_P = 0.85f
     internal const val FAST_TEMPERATURE = 0.4f
 
-    /** Unload models from RAM/GPU after 10 minutes of zero API activity to extend battery life. */
-    internal const val IDLE_UNLOAD_TIMEOUT_MS = 10 * 60 * 1000L
+    /** Minimum free system RAM (1.2 GB) required to keep a second separate model simultaneously resident. */
+    private const val MIN_FREE_RAM_FOR_DUAL_RESIDENCY_BYTES = 1_200L * 1024L * 1024L
     private const val WAKELOCK_TIMEOUT_MS = 3 * 60 * 1000L
 
     private val CONTROL_TOKEN_REGEX = Regex(
@@ -74,13 +75,17 @@ object PocketNodeInference {
     )
 
     private val modelMutexes = ConcurrentHashMap<String, Mutex>()
-    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(2))
     private val lastActivityMs = AtomicLong(0L)
     @Volatile private var idleWatchdogJob: Job? = null
 
     /** Global per-model mutex shared by UI preload, server startup preload, and HTTP requests. */
     fun modelMutex(modelName: String): Mutex =
         modelMutexes.getOrPut(modelName) { Mutex() }
+
+    /** Current idle unload timeout in milliseconds based on [PocketNodeState.configuredIdleMinutes]. */
+    internal fun currentIdleTimeoutMs(): Long =
+        PocketNodeState.clampIdleMinutes(PocketNodeState.configuredIdleMinutes) * 60_000L
 
     /** Strips raw model template/control tokens so untrusted text cannot corrupt turn boundaries. */
     internal fun sanitizeControlTokens(text: String): String =
@@ -183,6 +188,34 @@ object PocketNodeInference {
         return updated
     }
 
+    /** Checks if the device has enough free RAM to keep two separate models loaded without triggering zram/kswapd0 thrashing. */
+    internal fun hasEnoughRamForDualResidency(context: Context): Boolean {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return true
+        val memInfo = ActivityManager.MemoryInfo()
+        am.getMemoryInfo(memInfo)
+        return !memInfo.lowMemory && memInfo.availMem >= MIN_FREE_RAM_FOR_DUAL_RESIDENCY_BYTES
+    }
+
+    /** Frees any other loaded model before loading [targetModel] if system RAM is tight, preventing background swap drain. */
+    private suspend fun guardMemoryBeforeLoad(context: Context, targetModel: Model) {
+        if (hasEnoughRamForDualResidency(context)) return
+        val otherModels = listOfNotNull(
+            PocketNodeState.activeChatModel,
+            PocketNodeState.activeAudioModel,
+            PocketNodeState.activeModel,
+        ).distinctBy { it.name }.filter { it.name != targetModel.name && it.instance != null }
+
+        for (other in otherModels) {
+            if (other.isWhisperStt) {
+                runCatching { (other.instance as? WhisperEngine)?.close() }
+                other.instance = null
+            } else {
+                LlmChatModelHelper.cleanUp(other, onDone = {})
+            }
+            Log.i(TAG, "Evicted '${other.name}' to prevent low-RAM zram thrashing before loading '${targetModel.name}'")
+        }
+    }
+
     /** Preloads either a Whisper TFLite model or an LLM model into memory immediately (thread-safe). */
     suspend fun preloadModel(
         context: Context,
@@ -206,6 +239,7 @@ object PocketNodeInference {
                 IllegalStateException("El archivo del modelo '${model.name}' no está descargado.")
             )
         }
+        guardMemoryBeforeLoad(context, model)
         if (model.isWhisperStt) {
             if (model.instance is WhisperEngine) {
                 return Result.success("Whisper (en memoria)")
@@ -249,6 +283,7 @@ object PocketNodeInference {
         )
 
         if (model.instance != null && currentMaxTokens == desiredMaxTokens) {
+            closeIdleConversation(model)
             val current = Accelerator.entries.firstOrNull {
                 it.label == model.configValues[ConfigKeys.ACCELERATOR.label]
             }
@@ -268,7 +303,9 @@ object PocketNodeInference {
             applyFastServingConfig(model, accelerator, maxTokensOverride = desiredMaxTokens)
             val error = initializeOnce(context, model, supportAudio = supportAudio)
             if (error == null) {
-                Log.i(TAG, "Model '${model.name}' loaded on ${accelerator.label} (maxTokens=$desiredMaxTokens, Spanish)")
+                // Immediately release the initial Conversation KV-cache while keeping the Engine warm!
+                closeIdleConversation(model)
+                Log.i(TAG, "Model '${model.name}' loaded on ${accelerator.label} (maxTokens=$desiredMaxTokens, zero idle KV-cache)")
                 return Result.success(accelerator)
             }
             Log.w(TAG, "Model '${model.name}' failed on ${accelerator.label}: $error")
@@ -277,11 +314,16 @@ object PocketNodeInference {
         return Result.failure(IllegalStateException(lastError))
     }
 
+    /** Closes any open [com.google.ai.edge.litertlm.Conversation] while keeping [LlmModelInstance.engine] warm in RAM. */
+    private fun closeIdleConversation(model: Model) {
+        (model.instance as? LlmModelInstance)?.closeIdleConversation()
+    }
+
     /**
      * Executes an isolated, stateless LLM inference in its own disposable [com.google.ai.edge.litertlm.Conversation]:
      * - Acquires a temporary CPU WakeLock only for the duration of the inference.
-     * - Creates a dedicated Conversation with [systemInstruction] so requests never share KV cache.
-     * - Cancels and closes the Conversation in `finally` (including on client disconnect/timeout).
+     * - Creates a dedicated Conversation (< 5 ms) with [systemInstruction] so requests never share KV cache.
+     * - Cancels and closes the Conversation in `finally` (`closeIdleConversation`), holding zero KV-cache when idle.
      */
     suspend fun runIsolatedLlmInference(
         context: Context?,
@@ -294,7 +336,6 @@ object PocketNodeInference {
     ): String = modelMutex(model.name).withLock {
         touchActivity(context)
         withInferenceWakeLock(context) {
-            // Reinitialize engine if a per-request or UI-configured maxTokens change requires a new token budget
             val targetMaxTokens = PocketNodeState.clampMaxTokens(
                 maxTokensOverride?.takeIf { it > 0 } ?: PocketNodeState.configuredMaxTokens
             )
@@ -303,6 +344,7 @@ object PocketNodeInference {
                 defaultValue = PocketNodeState.DEFAULT_MAX_TOKENS,
             )
             if (context != null && (model.instance == null || currentMaxTokens != targetMaxTokens)) {
+                guardMemoryBeforeLoad(context, model)
                 initializeLlmLocked(
                     context = context,
                     model = model,
@@ -325,9 +367,7 @@ object PocketNodeInference {
                 defaultValue = Accelerator.GPU.label,
             )
 
-            // Close any previous default conversation before creating an isolated one for this request.
-            runCatching { instance.conversation.cancelProcess() }
-            runCatching { instance.conversation.close() }
+            closeIdleConversation(model)
 
             val requestConversation = instance.engine.createConversation(
                 ConversationConfig(
@@ -397,8 +437,7 @@ object PocketNodeInference {
                     )
                 }
             } finally {
-                runCatching { requestConversation.cancelProcess() }
-                runCatching { requestConversation.close() }
+                instance.closeIdleConversation()
             }
 
             sanitizeModelOutput(responseBuilder.toString())
@@ -434,20 +473,22 @@ object PocketNodeInference {
 
     private fun scheduleIdleWatchdog(appContext: Context?) {
         idleWatchdogJob?.cancel()
+        val timeoutMs = currentIdleTimeoutMs()
         idleWatchdogJob = backgroundScope.launch {
-            delay(IDLE_UNLOAD_TIMEOUT_MS)
+            delay(timeoutMs)
             val elapsed = System.currentTimeMillis() - lastActivityMs.get()
-            if (elapsed >= IDLE_UNLOAD_TIMEOUT_MS && PocketNodeState.isServerRunning) {
+            if (elapsed >= timeoutMs && PocketNodeState.isServerRunning) {
                 val released = releaseAllLoadedModels()
                 if (released.isNotEmpty()) {
-                    Log.i(TAG, "Hibernated idle models to save battery: ${released.joinToString()}")
+                    val mins = PocketNodeState.configuredIdleMinutes
+                    Log.i(TAG, "Hibernated idle models after ${mins}m to save battery: ${released.joinToString()}")
                     PocketNodeLogger.log(
                         method = "SERVER",
                         route = "hibernate",
                         statusCode = 200,
                         durationMs = 0L,
                         model = released.joinToString(", "),
-                        detail = "Modelos liberados tras 10m de inactividad para ahorrar batería (se recargarán al recibir petición)",
+                        detail = "Modelos en hibernación tras ${mins}m sin uso para ahorrar batería (recarga rápida con caché GPU)",
                         context = appContext,
                     )
                 }
@@ -457,6 +498,7 @@ object PocketNodeInference {
 
     /** Releases all currently loaded Chat/Audio models from RAM and GPU to conserve battery. */
     suspend fun releaseAllLoadedModels(): List<String> {
+        idleWatchdogJob?.cancel()
         val candidates = listOfNotNull(
             PocketNodeState.activeChatModel,
             PocketNodeState.activeAudioModel,

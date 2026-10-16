@@ -59,6 +59,7 @@ class PocketNodeModelResolverTest {
     @Test
     fun pocketNodeInference_prefersGpuAndApplies8000TokenSpanishDefaults() {
         PocketNodeState.configuredMaxTokens = PocketNodeState.DEFAULT_MAX_TOKENS
+        PocketNodeState.configuredIdleMinutes = PocketNodeState.DEFAULT_IDLE_TIMEOUT_MINUTES
         val model = Model(
             name = "Gemma-4-E2B-it",
             llmMaxToken = 1024,
@@ -66,6 +67,8 @@ class PocketNodeModelResolverTest {
         )
 
         assertEquals(8000, PocketNodeState.DEFAULT_MAX_TOKENS)
+        assertEquals(3, PocketNodeState.DEFAULT_IDLE_TIMEOUT_MINUTES)
+        assertEquals(180_000L, PocketNodeInference.currentIdleTimeoutMs())
         assertEquals(Accelerator.GPU, PocketNodeInference.preferredAccelerator(model))
 
         val cfg = PocketNodeInference.applyFastServingConfig(model)

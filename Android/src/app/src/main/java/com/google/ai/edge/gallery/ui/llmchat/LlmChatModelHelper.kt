@@ -50,7 +50,39 @@ import kotlinx.coroutines.CoroutineScope
 
 private const val TAG = "AGLlmChatModelHelper"
 
-data class LlmModelInstance(val engine: Engine, var conversation: Conversation)
+/**
+ * Holds a warm LiteRT-LM [Engine] while allowing the active [Conversation] KV-cache to be
+ * completely released when idle ([closeIdleConversation]) and lazily recreated on demand if
+ * accessed by interactive UI screens.
+ */
+class LlmModelInstance(val engine: Engine, conversation: Conversation? = null) {
+  @Volatile private var _conversation: Conversation? = conversation
+
+  var conversation: Conversation
+    get() {
+      val existing = _conversation
+      if (existing != null) return existing
+      synchronized(this) {
+        return _conversation ?: engine.createConversation().also { _conversation = it }
+      }
+    }
+    set(value) {
+      synchronized(this) { _conversation = value }
+    }
+
+  val hasActiveConversation: Boolean
+    get() = _conversation != null
+
+  /** Closes the underlying [Conversation] KV-cache without triggering lazy recreation. */
+  fun closeIdleConversation() {
+    synchronized(this) {
+      val conv = _conversation ?: return
+      _conversation = null
+      runCatching { conv.cancelProcess() }
+      runCatching { conv.close() }
+    }
+  }
+}
 
 object LlmChatModelHelper : LlmModelHelper {
   // Indexed by model name.
@@ -219,8 +251,7 @@ object LlmChatModelHelper : LlmModelHelper {
       Log.d(TAG, "Resetting conversation for model '${model.name}'")
 
       val instance = model.instance as LlmModelInstance? ?: return
-      runCatching { instance.conversation.cancelProcess() }
-      runCatching { instance.conversation.close() }
+      instance.closeIdleConversation()
 
       val engine = instance.engine
       val topK = model.getIntConfigValue(key = ConfigKeys.TOPK, defaultValue = DEFAULT_TOPK)
@@ -272,8 +303,7 @@ object LlmChatModelHelper : LlmModelHelper {
     val instance = model.instance as LlmModelInstance
 
     try {
-      runCatching { instance.conversation.cancelProcess() }
-      instance.conversation.close()
+      instance.closeIdleConversation()
     } catch (e: Exception) {
       Log.e(TAG, "Failed to close the conversation: ${e.message}")
     }
@@ -296,7 +326,9 @@ object LlmChatModelHelper : LlmModelHelper {
 
   override fun stopResponse(model: Model) {
     val instance = model.instance as? LlmModelInstance ?: return
-    instance.conversation.cancelProcess()
+    if (instance.hasActiveConversation) {
+      instance.conversation.cancelProcess()
+    }
   }
 
   override fun runInference(
@@ -321,6 +353,14 @@ object LlmChatModelHelper : LlmModelHelper {
       cleanUpListeners[model.name] = cleanUpListener
     }
 
+    if (!instance.hasActiveConversation) {
+      resetConversation(
+        model = model,
+        supportImage = images.isNotEmpty(),
+        supportAudio = audioClips.isNotEmpty(),
+        systemInstruction = null,
+      )
+    }
     val conversation = instance.conversation
 
     val contents = mutableListOf<Content>()

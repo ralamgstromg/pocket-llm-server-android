@@ -4,6 +4,19 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Optimización avanzada de batería en primer y segundo plano (sin perder velocidad en API)
+- `MainActivity.kt`:
+  - Elimina `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` fijo que impedía que la pantalla del teléfono se apagara sola.
+  - Elimina envíos de telemetría `FirebaseAnalytics` en cada `onResume()`.
+- `AndroidManifest.xml`:
+  - Desactiva servicios en segundo plano innecesarios (`AppMeasurementReceiver`, `AppMeasurementService`, `AppMeasurementJobService`, `GalleryFcmMessagingService`) y `firebase_analytics_collection_deactivated = true` para evitar despertares de radio y CPU.
+- `ui/llmchat/LlmChatModelHelper.kt` y `server/PocketNodeInference.kt`:
+  - **Modo "Engine Warm / Zero KV-Cache Idle"**: cierra inmediatamente la `Conversation` tras precargar el `Engine` y al finalizar cada petición (`instance.conversation = null`), liberando cientos de MB de buffers KV-cache en reposo mientras el `Engine` permanece listo para crear una `Conversation` en `< 5 ms`.
+  - **Guardia de presión de RAM (`hasEnoughRamForDualResidency`, `guardMemoryBeforeLoad`)**: evita mantener dos modelos pesados simultáneamente en RAM si la memoria libre es menor a `1.2 GB`, previniendo que `zram`/`kswapd0` consuma batería en segundo plano.
+  - **Hibernación en reposo en `3 min` por defecto (configurable `1m`, `3m`, `5m`, `15m`)**: reduce el tiempo de hibernación por inactividad de `10 min` a `3 min` (`DEFAULT_IDLE_TIMEOUT_MINUTES = 3`), configurable desde `PocketNodeServerDialog`.
+- `server/PocketNodeServer.kt`:
+  - Usa un dispatcher acotado `Dispatchers.IO.limitedParallelism(2)` y un `SupervisorJob` cancelable para Ktor CIO en lugar del pool global de 64 hilos.
+
 ### Límite de tokens por petición en 8000 por defecto y configurable en UI / API
 - `server/PocketNodeState.kt`:
   - Nuevo `DEFAULT_MAX_TOKENS = 8000` (`MIN_MAX_TOKENS = 256`, `MAX_MAX_TOKENS = 32768`) y estado reactivo `configuredMaxTokens` persistido en `SharedPreferences` (`api_max_tokens`).
@@ -17,7 +30,7 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 - `server/PocketNodeInference.kt`:
   - `buildChatPromptContext`: separa mensajes `system`/`developer` hacia `ConversationConfig.systemInstruction` (junto con `DEFAULT_SPANISH_SYSTEM_PROMPT`), limpia tags de control inyectados (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<|endoftext|>`, `<bos>`, `<eos>`, `<ctrl...>`) y estructura el historial multiturno (`<historial_conversacion>` vs `<mensaje_actual_usuario>`) para evitar mezcla de solicitudes.
   - `runIsolatedLlmInference`: crea una `Conversation` nueva y aislada por cada llamada HTTP bajo un `Mutex` global por modelo (`modelMutex`), soporta cancelación nativa (`suspendCancellableCoroutine` -> `cancelProcess()`), filtra tokens `<ctrl...>` y cierra siempre la sesión en `finally`.
-  - **Ahorro de batería**: adquiere `PARTIAL_WAKE_LOCK` (`withInferenceWakeLock`) únicamente mientras hay una inferencia activa, hiberna automáticamente los modelos en RAM/GPU tras 10 minutos de inactividad (`IDLE_UNLOAD_TIMEOUT_MS`) y libera todos los modelos al detener el servidor (`releaseAllLoadedModels`).
+  - **Ahorro de batería**: adquiere `PARTIAL_WAKE_LOCK` (`withInferenceWakeLock`) únicamente mientras hay una inferencia activa y libera todos los modelos al detener el servidor (`releaseAllLoadedModels`).
 - `server/PocketNodeServer.kt`:
   - Soporta `temperature` y `max_tokens` opcionales en `ChatRequest`, usa `buildChatPromptContext` y `runIsolatedLlmInference`, evita escrituras a disco en `GET /` y libera todos los modelos en `stop()`.
 - `ui/llmchat/LlmChatModelHelper.kt`:

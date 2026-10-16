@@ -19,6 +19,8 @@ import io.ktor.server.routing.*
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -62,19 +64,33 @@ class PocketNodeServer {
     }
 
     private var server: EmbeddedServer<*, *>? = null
+    private val serverDispatcher = Dispatchers.IO.limitedParallelism(2)
+    private var serverJob: Job = SupervisorJob()
+    private var serverScope: CoroutineScope = CoroutineScope(serverJob + serverDispatcher)
 
     fun start(context: Context? = null) {
         if (server != null) return
+        if (serverJob.isCancelled) {
+            serverJob = SupervisorJob()
+            serverScope = CoroutineScope(serverJob + serverDispatcher)
+        }
         context?.let {
             PocketNodeState.loadPreferences(it)
+            
+            PocketNodeState.loadPreferences(it)
             PocketNodeLogger.loadPreferences(it)
+        
         }
         PocketNodeState.isServerRunning = true
         PocketNodeState.lastStartupError = null
 
-        CoroutineScope(Dispatchers.IO).launch {
+        serverScope.launch {
             try {
-                val newServer = embeddedServer(CIO, port = PORT) {
+                val newServer = embeddedServer(
+                    factory = CIO,
+                    port = PORT,
+                    parentCoroutineContext = serverScope.coroutineContext,
+                ) {
                     install(CORS) {
                         anyHost() // Allow connections from n8n or any local network client
                         allowHeader(io.ktor.http.HttpHeaders.ContentType)
@@ -332,7 +348,7 @@ class PocketNodeServer {
                     statusCode = 200,
                     durationMs = 0L,
                     model = PocketNodeState.activeChatModel?.name ?: PocketNodeState.activeAudioModel?.name,
-                    detail = "Servidor HTTP iniciado en puerto $PORT (maxTokens=${PocketNodeState.configuredMaxTokens})",
+                    detail = "Servidor HTTP iniciado en puerto $PORT (maxTokens=${PocketNodeState.configuredMaxTokens}, idle=${PocketNodeState.configuredIdleMinutes}m)",
                     context = context,
                 )
             } catch (e: Exception) {
@@ -353,9 +369,9 @@ class PocketNodeServer {
         context?.let { preloadActiveModels(it) }
     }
 
-    /** Preloads both active Chat and Audio STT models into memory as soon as the API is enabled. */
+    /** Preloads active models into memory while avoiding dual-model RAM thrashing on memory-constrained devices. */
     private fun preloadActiveModels(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
+        serverScope.launch {
             val chatModel = PocketNodeState.activeChatModel?.takeUnless { it.isWhisperStt }
             val audioModel = PocketNodeState.activeAudioModel
             val sharedAudio = chatModel != null && audioModel != null && chatModel.name == audioModel.name
@@ -389,6 +405,18 @@ class PocketNodeServer {
             }
 
             if (audioModel != null && !sharedAudio) {
+                if (chatModel != null && !PocketNodeInference.hasEnoughRamForDualResidency(context)) {
+                    PocketNodeLogger.log(
+                        method = "SERVER",
+                        route = "preload",
+                        statusCode = 200,
+                        durationMs = 0L,
+                        model = audioModel.name,
+                        detail = "Modo ahorro RAM/batería: STT listo para carga bajo demanda",
+                        context = context,
+                    )
+                    return@launch
+                }
                 val startMs = System.currentTimeMillis()
                 PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
                     .onSuccess { backend ->
@@ -481,7 +509,7 @@ class PocketNodeServer {
     ): WhisperOutput = PocketNodeInference.modelMutex(model.name).withLock {
         PocketNodeInference.touchActivity(context)
         PocketNodeInference.withInferenceWakeLock(context) {
-            withContext(Dispatchers.IO) {
+            withContext(serverDispatcher) {
                 val engine = model.instance as WhisperEngine
                 WhisperOutput(engine.transcribe(samples, language), engine.lastTimings)
             }
@@ -490,16 +518,17 @@ class PocketNodeServer {
 
     fun stop() {
         PocketNodeState.isServerRunning = false
-        server?.stop(1000, 2000, TimeUnit.MILLISECONDS)
+        server?.stop(500, 1000, TimeUnit.MILLISECONDS)
         server = null
+        serverJob.cancel()
         PocketNodeLogger.log(
             method = "SERVER",
             route = "stop",
             statusCode = 200,
             durationMs = 0L,
-            detail = "Servidor HTTP detenido y modelos liberados de memoria",
+            detail = "Servidor HTTP detenido y recursos liberados",
         )
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope( serverDispatcher ).launch {
             PocketNodeInference.releaseAllLoadedModels()
         }
     }

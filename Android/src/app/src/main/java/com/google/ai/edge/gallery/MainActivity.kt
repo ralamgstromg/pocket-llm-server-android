@@ -20,7 +20,6 @@ import android.animation.ObjectAnimator
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,14 +43,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.animation.doOnEnd
-import androidx.core.os.bundleOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 import com.google.ai.edge.gallery.ui.theme.GalleryTheme
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.ExperimentalFlags
-import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -105,10 +102,6 @@ class MainActivity : ComponentActivity() {
     // Show splash screen.
     val splashScreen = installSplashScreen()
 
-    // Set the content when the system-provided splash screen is not shown.
-    //
-    // This is necessary on some Android versions where the splash screen is optimized away (e.g.,
-    // after a force-quit) to ensure the main content is displayed immediately and correctly.
     lifecycleScope.launch {
       delay(1000)
       if (!splashScreenAboutToExit) {
@@ -116,18 +109,6 @@ class MainActivity : ComponentActivity() {
       }
     }
 
-    // Cross-fade transition from the splash screen to the main content.
-    //
-    // The logic performs the following key actions:
-    // 1. Synchronizes Timing: It calculates the remaining duration of the default icon
-    //    animation. It then delays its own animations to ensure the custom fade-out begins just
-    //    before the original icon animation would have finished.
-    // 2. Initiates a cross-fade:
-    //    - Fade out the splash screen.
-    //    - Fade in the main content.
-    // 3. Cleans up: An `onEnd` listener on the fade-out animator calls
-    //    `splashScreenView.remove()` to properly remove the splash screen from the view hierarchy
-    //    once it's fully transparent.
     splashScreen.setOnExitAnimationListener { splashScreenView ->
       splashScreenAboutToExit = true
 
@@ -154,21 +135,8 @@ class MainActivity : ComponentActivity() {
       // See: https://issuetracker.google.com/issues/298296168
       window.isNavigationBarContrastEnforced = false
     }
-    // Keep the screen on while the app is running for better demo experience.
-    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-  }
-
-  override fun onResume() {
-    super.onResume()
-
-    firebaseAnalytics?.logEvent(
-      FirebaseAnalytics.Event.APP_OPEN,
-      bundleOf(
-        "app_version" to BuildConfig.VERSION_NAME,
-        "os_version" to Build.VERSION.SDK_INT.toString(),
-        "device_model" to Build.MODEL,
-      ),
-    )
+    // Note: FLAG_KEEP_SCREEN_ON removed to allow the display to sleep and save battery
+    // while PocketNodeService continues serving API requests in the background.
   }
 
   companion object {
