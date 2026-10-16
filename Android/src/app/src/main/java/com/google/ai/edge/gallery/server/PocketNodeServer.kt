@@ -5,34 +5,33 @@ import android.util.Log
 import com.google.ai.edge.gallery.server.whisper.WhisperEngine
 import com.google.ai.edge.gallery.server.whisper.WhisperTimings
 import com.google.ai.edge.gallery.server.whisper.isWhisperStt
-import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.engine.*
 import io.ktor.server.cio.*
+import io.ktor.server.engine.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.engine.EmbeddedServer
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Serializable
-data class ChatRequest(val model: String = "", val messages: List<Message> = emptyList())
+data class ChatRequest(
+    val model: String = "",
+    val messages: List<Message> = emptyList(),
+    val temperature: Float? = null,
+    @SerialName("max_tokens") val maxTokens: Int? = null,
+)
 
 @Serializable
 data class Message(val role: String, val content: String)
@@ -63,7 +62,6 @@ class PocketNodeServer {
     }
 
     private var server: EmbeddedServer<*, *>? = null
-    private val serverMutexMap = ConcurrentHashMap<String, Mutex>()
 
     fun start(context: Context? = null) {
         if (server != null) return
@@ -82,245 +80,270 @@ class PocketNodeServer {
                         json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
                     }
 
-                routing {
-                    get("/") {
-                        val startMs = System.currentTimeMillis()
-                        call.respondText("Pocket Node AI is running!")
-                        PocketNodeLogger.log(
-                            method = "GET",
-                            route = "/",
-                            statusCode = HttpStatusCode.OK.value,
-                            durationMs = System.currentTimeMillis() - startMs,
-                            detail = "Health check OK",
-                            context = context,
-                        )
-                    }
-
-                    post("/v1/chat/completions") {
-                        val startMs = System.currentTimeMillis()
-                        var resolvedModelName: String? = null
-                        try {
-                            val req = call.receive<ChatRequest>()
-                            val prompt = req.messages.lastOrNull()?.content ?: ""
-
-                            val (model, err) = resolveAndInitModel(req.model, context, isAudio = false)
-                            if (err != null || model == null) {
-                                val errorMsg = err ?: "Model error"
-                                PocketNodeLogger.log(
-                                    method = "POST",
-                                    route = "/v1/chat/completions",
-                                    statusCode = HttpStatusCode.ServiceUnavailable.value,
-                                    durationMs = System.currentTimeMillis() - startMs,
-                                    model = req.model.ifBlank { PocketNodeState.activeChatModel?.name },
-                                    detail = errorMsg,
-                                    context = context,
-                                )
-                                call.respondText(errorMsg, status = HttpStatusCode.ServiceUnavailable)
-                                return@post
-                            }
-
-                            resolvedModelName = model.name
-                            call.response.headers.append(MODEL_HEADER, headerSafe(model.name))
-                            val fullResponse = executeModelInference(model, prompt)
-                            val reply = ChatResponse(
-                                id = "chatcmpl-${System.currentTimeMillis()}",
-                                model = model.name,
-                                choices = listOf(Choice(Message("assistant", fullResponse)))
-                            )
+                    routing {
+                        get("/") {
+                            val startMs = System.currentTimeMillis()
+                            call.respondText("Pocket Node AI is running!")
+                            // Keep health check logs in memory only (context = null) to avoid waking flash storage.
                             PocketNodeLogger.log(
-                                method = "POST",
-                                route = "/v1/chat/completions",
+                                method = "GET",
+                                route = "/",
                                 statusCode = HttpStatusCode.OK.value,
                                 durationMs = System.currentTimeMillis() - startMs,
-                                model = model.name,
-                                detail = "prompt=${prompt.length} chars, reply=${fullResponse.take(80)}",
-                                context = context,
+                                detail = "Health check OK",
+                                context = null,
                             )
-                            call.respond(reply)
-                        } catch (t: Throwable) {
-                            Log.e("PocketNodeServer", "Unhandled error in /v1/chat/completions", t)
-                            PocketNodeLogger.log(
-                                method = "POST",
-                                route = "/v1/chat/completions",
-                                statusCode = HttpStatusCode.InternalServerError.value,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = resolvedModelName,
-                                detail = "Exception: ${t.message}",
-                                context = context,
-                            )
-                            call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
                         }
-                    }
 
-                    post("/v1/audio/transcriptions") {
-                        val startMs = System.currentTimeMillis()
-                        var resolvedModelName: String? = null
-                        try {
-                            var rawAudioBytes: ByteArray? = null
-                            var promptParam: String? = null
-                            var languageParam: String? = null
-                            var responseFormatParam: String? = null
-
+                        post("/v1/chat/completions") {
+                            val startMs = System.currentTimeMillis()
+                            var resolvedModelName: String? = null
                             try {
-                                val multipart = call.receiveMultipart()
-                                multipart.forEachPart { part ->
-                                    when (part) {
-                                        is PartData.FileItem -> {
-                                            rawAudioBytes = part.streamProvider().readBytes()
-                                        }
-                                        is PartData.FormItem -> {
-                                            when (part.name) {
-                                                "prompt" -> promptParam = part.value
-                                                "language" -> languageParam = part.value
-                                                "response_format" -> responseFormatParam = part.value
-                                            }
-                                        }
-                                        else -> {}
-                                    }
-                                    part.dispose()
-                                }
-                            } catch (e: Exception) {
-                                val msg = "Error parsing multipart audio request: ${e.message}"
-                                PocketNodeLogger.log(
-                                    method = "POST",
-                                    route = "/v1/audio/transcriptions",
-                                    statusCode = HttpStatusCode.BadRequest.value,
-                                    durationMs = System.currentTimeMillis() - startMs,
-                                    detail = msg,
-                                    context = context,
-                                )
-                                call.respondText(msg, status = HttpStatusCode.BadRequest)
-                                return@post
-                            }
-
-                            if (rawAudioBytes == null || rawAudioBytes!!.isEmpty()) {
-                                val msg = "Error: No audio file uploaded in multipart field 'file'."
-                                PocketNodeLogger.log(
-                                    method = "POST",
-                                    route = "/v1/audio/transcriptions",
-                                    statusCode = HttpStatusCode.BadRequest.value,
-                                    durationMs = System.currentTimeMillis() - startMs,
-                                    detail = msg,
-                                    context = context,
-                                )
-                                call.respondText(msg, status = HttpStatusCode.BadRequest)
-                                return@post
-                            }
-
-                            val (audioModel, err) = resolveAndInitModel("", context, isAudio = true)
-                            if (err != null || audioModel == null) {
-                                val errorMsg = err ?: "Audio model error"
-                                PocketNodeLogger.log(
-                                    method = "POST",
-                                    route = "/v1/audio/transcriptions",
-                                    statusCode = HttpStatusCode.ServiceUnavailable.value,
-                                    durationMs = System.currentTimeMillis() - startMs,
-                                    model = PocketNodeState.activeAudioModel?.name,
-                                    detail = errorMsg,
-                                    context = context,
-                                )
-                                call.respondText(errorMsg, status = HttpStatusCode.ServiceUnavailable)
-                                return@post
-                            }
-
-                            resolvedModelName = audioModel.name
-                            call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
-                            val effectiveLanguage = languageParam?.takeIf { it.isNotBlank() } ?: PocketNodeInference.DEFAULT_LANGUAGE
-                            var whisperTimings: WhisperTimings? = null
-                            val cleanText = if (audioModel.isWhisperStt) {
-                                val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
-                                if (samples == null) {
-                                    val msg = "Error: audio no decodificable a 16 kHz mono."
+                                val req = call.receive<ChatRequest>()
+                                val promptContext = PocketNodeInference.buildChatPromptContext(req.messages)
+                                if (promptContext.userPrompt.isBlank()) {
+                                    val msg = "Error: No user message provided in 'messages'."
                                     PocketNodeLogger.log(
                                         method = "POST",
-                                        route = "/v1/audio/transcriptions",
+                                        route = "/v1/chat/completions",
                                         statusCode = HttpStatusCode.BadRequest.value,
                                         durationMs = System.currentTimeMillis() - startMs,
-                                        model = audioModel.name,
                                         detail = msg,
                                         context = context,
                                     )
                                     call.respondText(msg, status = HttpStatusCode.BadRequest)
                                     return@post
                                 }
-                                val output = transcribeWithWhisper(audioModel, samples, effectiveLanguage)
-                                whisperTimings = output.timings
-                                output.text
-                            } else {
-                                // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
-                                val processedAudioBytes = if (context != null) {
-                                    AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+
+                                val (model, err) = resolveAndInitModel(req.model, context, isAudio = false)
+                                if (err != null || model == null) {
+                                    val errorMsg = err ?: "Model error"
+                                    PocketNodeLogger.log(
+                                        method = "POST",
+                                        route = "/v1/chat/completions",
+                                        statusCode = HttpStatusCode.ServiceUnavailable.value,
+                                        durationMs = System.currentTimeMillis() - startMs,
+                                        model = req.model.ifBlank { PocketNodeState.activeChatModel?.name },
+                                        detail = errorMsg,
+                                        context = context,
+                                    )
+                                    call.respondText(errorMsg, status = HttpStatusCode.ServiceUnavailable)
+                                    return@post
+                                }
+
+                                resolvedModelName = model.name
+                                call.response.headers.append(MODEL_HEADER, headerSafe(model.name))
+                                val fullResponse = PocketNodeInference.runIsolatedLlmInference(
+                                    context = context,
+                                    model = model,
+                                    prompt = promptContext.userPrompt,
+                                    systemInstruction = promptContext.systemInstruction,
+                                    temperatureOverride = req.temperature,
+                                )
+                                val reply = ChatResponse(
+                                    id = "chatcmpl-${System.currentTimeMillis()}",
+                                    model = model.name,
+                                    choices = listOf(Choice(Message("assistant", fullResponse)))
+                                )
+                                PocketNodeLogger.log(
+                                    method = "POST",
+                                    route = "/v1/chat/completions",
+                                    statusCode = HttpStatusCode.OK.value,
+                                    durationMs = System.currentTimeMillis() - startMs,
+                                    model = model.name,
+                                    detail = "msgs=${req.messages.size}, prompt=${promptContext.userPrompt.length} chars, reply=${fullResponse.take(80)}",
+                                    context = context,
+                                )
+                                call.respond(reply)
+                            } catch (t: Throwable) {
+                                Log.e("PocketNodeServer", "Unhandled error in /v1/chat/completions", t)
+                                PocketNodeLogger.log(
+                                    method = "POST",
+                                    route = "/v1/chat/completions",
+                                    statusCode = HttpStatusCode.InternalServerError.value,
+                                    durationMs = System.currentTimeMillis() - startMs,
+                                    model = resolvedModelName,
+                                    detail = "Exception: ${t.message}",
+                                    context = context,
+                                )
+                                call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
+                            }
+                        }
+
+                        post("/v1/audio/transcriptions") {
+                            val startMs = System.currentTimeMillis()
+                            var resolvedModelName: String? = null
+                            try {
+                                var rawAudioBytes: ByteArray? = null
+                                var promptParam: String? = null
+                                var languageParam: String? = null
+                                var responseFormatParam: String? = null
+
+                                try {
+                                    val multipart = call.receiveMultipart()
+                                    multipart.forEachPart { part ->
+                                        when (part) {
+                                            is PartData.FileItem -> {
+                                                rawAudioBytes = part.streamProvider().readBytes()
+                                            }
+                                            is PartData.FormItem -> {
+                                                when (part.name) {
+                                                    "prompt" -> promptParam = part.value
+                                                    "language" -> languageParam = part.value
+                                                    "response_format" -> responseFormatParam = part.value
+                                                }
+                                            }
+                                            else -> {}
+                                        }
+                                        part.dispose()
+                                    }
+                                } catch (e: Exception) {
+                                    val msg = "Error parsing multipart audio request: ${e.message}"
+                                    PocketNodeLogger.log(
+                                        method = "POST",
+                                        route = "/v1/audio/transcriptions",
+                                        statusCode = HttpStatusCode.BadRequest.value,
+                                        durationMs = System.currentTimeMillis() - startMs,
+                                        detail = msg,
+                                        context = context,
+                                    )
+                                    call.respondText(msg, status = HttpStatusCode.BadRequest)
+                                    return@post
+                                }
+
+                                if (rawAudioBytes == null || rawAudioBytes!!.isEmpty()) {
+                                    val msg = "Error: No audio file uploaded in multipart field 'file'."
+                                    PocketNodeLogger.log(
+                                        method = "POST",
+                                        route = "/v1/audio/transcriptions",
+                                        statusCode = HttpStatusCode.BadRequest.value,
+                                        durationMs = System.currentTimeMillis() - startMs,
+                                        detail = msg,
+                                        context = context,
+                                    )
+                                    call.respondText(msg, status = HttpStatusCode.BadRequest)
+                                    return@post
+                                }
+
+                                val (audioModel, err) = resolveAndInitModel("", context, isAudio = true)
+                                if (err != null || audioModel == null) {
+                                    val errorMsg = err ?: "Audio model error"
+                                    PocketNodeLogger.log(
+                                        method = "POST",
+                                        route = "/v1/audio/transcriptions",
+                                        statusCode = HttpStatusCode.ServiceUnavailable.value,
+                                        durationMs = System.currentTimeMillis() - startMs,
+                                        model = PocketNodeState.activeAudioModel?.name,
+                                        detail = errorMsg,
+                                        context = context,
+                                    )
+                                    call.respondText(errorMsg, status = HttpStatusCode.ServiceUnavailable)
+                                    return@post
+                                }
+
+                                resolvedModelName = audioModel.name
+                                call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
+                                val effectiveLanguage = languageParam?.takeIf { it.isNotBlank() } ?: PocketNodeInference.DEFAULT_LANGUAGE
+                                var whisperTimings: WhisperTimings? = null
+                                val cleanText = if (audioModel.isWhisperStt) {
+                                    val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
+                                    if (samples == null) {
+                                        val msg = "Error: audio no decodificable a 16 kHz mono."
+                                        PocketNodeLogger.log(
+                                            method = "POST",
+                                            route = "/v1/audio/transcriptions",
+                                            statusCode = HttpStatusCode.BadRequest.value,
+                                            durationMs = System.currentTimeMillis() - startMs,
+                                            model = audioModel.name,
+                                            detail = msg,
+                                            context = context,
+                                        )
+                                        call.respondText(msg, status = HttpStatusCode.BadRequest)
+                                        return@post
+                                    }
+                                    val output = transcribeWithWhisper(context, audioModel, samples, effectiveLanguage)
+                                    whisperTimings = output.timings
+                                    output.text
                                 } else {
-                                    rawAudioBytes!!
-                                }
+                                    // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
+                                    val processedAudioBytes = if (context != null) {
+                                        AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+                                    } else {
+                                        rawAudioBytes!!
+                                    }
 
-                                val prompt = when {
-                                    !promptParam.isNullOrBlank() -> promptParam!!
-                                    effectiveLanguage.equals("es", ignoreCase = true) || effectiveLanguage.equals("spanish", ignoreCase = true) ->
-                                        "Entrega ÚNICAMENTE el texto hablado literal de este audio en español. No incluyas introducciones, etiquetas, comillas ni explicaciones."
-                                    else ->
-                                        "Output ONLY the verbatim spoken text from this audio in language ${effectiveLanguage}. Do NOT include any intro, explanation, labels, or extra words."
-                                }
+                                    val prompt = when {
+                                        !promptParam.isNullOrBlank() -> PocketNodeInference.sanitizeControlTokens(promptParam!!)
+                                        effectiveLanguage.equals("es", ignoreCase = true) || effectiveLanguage.equals("spanish", ignoreCase = true) ->
+                                            "Entrega ÚNICAMENTE el texto hablado literal de este audio en español. No incluyas introducciones, etiquetas, comillas ni explicaciones."
+                                        else ->
+                                            "Output ONLY the verbatim spoken text from this audio in language ${effectiveLanguage}. Do NOT include any intro, explanation, labels, or extra words."
+                                    }
 
-                                val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
-                                sanitizeSpokenText(fullResponse)
+                                    val fullResponse = PocketNodeInference.runIsolatedLlmInference(
+                                        context = context,
+                                        model = audioModel,
+                                        prompt = prompt,
+                                        audioClips = listOf(processedAudioBytes),
+                                    )
+                                    sanitizeSpokenText(fullResponse)
+                                }
+                                whisperTimings?.let { call.response.headers.append(TIMINGS_HEADER, it.toHeaderValue()) }
+                                val timingsNote = whisperTimings?.let { " | timings=${it.toHeaderValue()}" }.orEmpty()
+                                PocketNodeLogger.log(
+                                    method = "POST",
+                                    route = "/v1/audio/transcriptions",
+                                    statusCode = HttpStatusCode.OK.value,
+                                    durationMs = System.currentTimeMillis() - startMs,
+                                    model = audioModel.name,
+                                    detail = "audio=${rawAudioBytes!!.size}B, lang=$effectiveLanguage, text=${cleanText.ifEmpty { "(vacío)" }.take(60)}$timingsNote",
+                                    context = context,
+                                )
+                                if (responseFormatParam.equals("text", ignoreCase = true)) {
+                                    call.respondText(cleanText, ContentType.Text.Plain)
+                                } else {
+                                    call.respond(TranscriptionResponse(text = cleanText))
+                                }
+                            } catch (t: Throwable) {
+                                Log.e("PocketNodeServer", "Unhandled error in /v1/audio/transcriptions", t)
+                                PocketNodeLogger.log(
+                                    method = "POST",
+                                    route = "/v1/audio/transcriptions",
+                                    statusCode = HttpStatusCode.InternalServerError.value,
+                                    durationMs = System.currentTimeMillis() - startMs,
+                                    model = resolvedModelName,
+                                    detail = "Exception: ${t.message}",
+                                    context = context,
+                                )
+                                call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
                             }
-                            whisperTimings?.let { call.response.headers.append(TIMINGS_HEADER, it.toHeaderValue()) }
-                            val timingsNote = whisperTimings?.let { " | timings=${it.toHeaderValue()}" }.orEmpty()
-                            PocketNodeLogger.log(
-                                method = "POST",
-                                route = "/v1/audio/transcriptions",
-                                statusCode = HttpStatusCode.OK.value,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = audioModel.name,
-                                detail = "audio=${rawAudioBytes!!.size}B, lang=$effectiveLanguage, text=${cleanText.ifEmpty { "(vacío)" }.take(60)}$timingsNote",
-                                context = context,
-                            )
-                            if (responseFormatParam.equals("text", ignoreCase = true)) {
-                                call.respondText(cleanText, ContentType.Text.Plain)
-                            } else {
-                                call.respond(TranscriptionResponse(text = cleanText))
-                            }
-                        } catch (t: Throwable) {
-                            Log.e("PocketNodeServer", "Unhandled error in /v1/audio/transcriptions", t)
-                            PocketNodeLogger.log(
-                                method = "POST",
-                                route = "/v1/audio/transcriptions",
-                                statusCode = HttpStatusCode.InternalServerError.value,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = resolvedModelName,
-                                detail = "Exception: ${t.message}",
-                                context = context,
-                            )
-                            call.respondText("Internal Server Error: ${t.message}", status = HttpStatusCode.InternalServerError)
                         }
                     }
                 }
+                server = newServer.start(wait = false)
+                PocketNodeLogger.log(
+                    method = "SERVER",
+                    route = "start",
+                    statusCode = 200,
+                    durationMs = 0L,
+                    model = PocketNodeState.activeChatModel?.name ?: PocketNodeState.activeAudioModel?.name,
+                    detail = "Servidor HTTP iniciado en puerto $PORT",
+                    context = context,
+                )
+            } catch (e: Exception) {
+                Log.e("PocketNodeServer", "Failed to start Ktor HTTP server", e)
+                PocketNodeState.isServerRunning = false
+                PocketNodeState.lastStartupError = "Error al iniciar servidor (puerto $PORT en uso o error de red): ${e.message}"
+                PocketNodeLogger.log(
+                    method = "SERVER",
+                    route = "start",
+                    statusCode = 500,
+                    durationMs = 0L,
+                    detail = "Error al iniciar servidor: ${e.message}",
+                    context = context,
+                )
+                server = null
             }
-            server = newServer.start(wait = false)
-            PocketNodeLogger.log(
-                method = "SERVER",
-                route = "start",
-                statusCode = 200,
-                durationMs = 0L,
-                model = PocketNodeState.activeChatModel?.name ?: PocketNodeState.activeAudioModel?.name,
-                detail = "Servidor HTTP iniciado en puerto $PORT",
-                context = context,
-            )
-        } catch (e: Exception) {
-            Log.e("PocketNodeServer", "Failed to start Ktor HTTP server", e)
-            PocketNodeState.isServerRunning = false
-            PocketNodeState.lastStartupError = "Error al iniciar servidor (puerto $PORT en uso o error de red): ${e.message}"
-            PocketNodeLogger.log(
-                method = "SERVER",
-                route = "start",
-                statusCode = 500,
-                durationMs = 0L,
-                detail = "Error al iniciar servidor: ${e.message}",
-                context = context,
-            )
-            server = null
-        }
         }
         context?.let { preloadActiveModels(it) }
     }
@@ -334,62 +357,58 @@ class PocketNodeServer {
 
             if (chatModel != null) {
                 val startMs = System.currentTimeMillis()
-                serverMutexMap.getOrPut(chatModel.name) { Mutex() }.withLock {
-                    PocketNodeInference.preloadModel(context, chatModel, forAudio = sharedAudio)
-                        .onSuccess { backend ->
-                            PocketNodeLogger.log(
-                                method = "SERVER",
-                                route = "preload",
-                                statusCode = 200,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = chatModel.name,
-                                detail = "Modelo chat precargado en $backend (español)",
-                                context = context,
-                            )
-                        }
-                        .onFailure { e ->
-                            Log.w("PocketNodeServer", "Chat model preload skipped: ${e.message}")
-                            PocketNodeLogger.log(
-                                method = "SERVER",
-                                route = "preload",
-                                statusCode = 503,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = chatModel.name,
-                                detail = "Precarga chat omitida: ${e.message}",
-                                context = context,
-                            )
-                        }
-                }
+                PocketNodeInference.preloadModel(context, chatModel, forAudio = sharedAudio)
+                    .onSuccess { backend ->
+                        PocketNodeLogger.log(
+                            method = "SERVER",
+                            route = "preload",
+                            statusCode = 200,
+                            durationMs = System.currentTimeMillis() - startMs,
+                            model = chatModel.name,
+                            detail = "Modelo chat precargado en $backend (español)",
+                            context = context,
+                        )
+                    }
+                    .onFailure { e ->
+                        Log.w("PocketNodeServer", "Chat model preload skipped: ${e.message}")
+                        PocketNodeLogger.log(
+                            method = "SERVER",
+                            route = "preload",
+                            statusCode = 503,
+                            durationMs = System.currentTimeMillis() - startMs,
+                            model = chatModel.name,
+                            detail = "Precarga chat omitida: ${e.message}",
+                            context = context,
+                        )
+                    }
             }
 
             if (audioModel != null && !sharedAudio) {
                 val startMs = System.currentTimeMillis()
-                serverMutexMap.getOrPut(audioModel.name) { Mutex() }.withLock {
-                    PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
-                        .onSuccess { backend ->
-                            PocketNodeLogger.log(
-                                method = "SERVER",
-                                route = "preload",
-                                statusCode = 200,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = audioModel.name,
-                                detail = "Modelo audio STT precargado en $backend (español)",
-                                context = context,
-                            )
-                        }
-                        .onFailure { e ->
-                            Log.w("PocketNodeServer", "Audio model preload skipped: ${e.message}")
-                            PocketNodeLogger.log(
-                                method = "SERVER",
-                                route = "preload",
-                                statusCode = 503,
-                                durationMs = System.currentTimeMillis() - startMs,
-                                model = audioModel.name,
-                                detail = "Precarga audio omitida: ${e.message}",
-                                context = context,
-                            )
-                        }
-                }
+                PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
+                    .onSuccess { backend ->
+                        PocketNodeLogger.log(
+                            method = "SERVER",
+                            route = "preload",
+                            statusCode = 200,
+                            durationMs = System.currentTimeMillis() - startMs,
+                            model = audioModel.name,
+                            detail = "Modelo audio STT precargado en $backend (español)",
+                            context = context,
+                        )
+                    }
+                    .onFailure { e ->
+                        Log.w("PocketNodeServer", "Audio model preload skipped: ${e.message}")
+                        PocketNodeLogger.log(
+                            method = "SERVER",
+                            route = "preload",
+                            statusCode = 503,
+                            durationMs = System.currentTimeMillis() - startMs,
+                            model = audioModel.name,
+                            detail = "Precarga audio omitida: ${e.message}",
+                            context = context,
+                        )
+                    }
             }
         }
     }
@@ -437,17 +456,7 @@ class PocketNodeServer {
                 return Pair(null, "Error: Model file '${model.name}' (${model.downloadFileName}) is not downloaded on device yet. Please download it in the Gallery App first.")
             }
 
-            if (model.isWhisperStt) {
-                model.instance = try {
-                    WhisperEngine.load(context, modelFile)
-                } catch (e: Exception) {
-                    Log.e("PocketNodeServer", "Failed to load Whisper model ${model.name}", e)
-                    return Pair(null, "Error cargando Whisper '${model.name}': ${e.message}")
-                }
-                return Pair(model, null)
-            }
-
-            PocketNodeInference.initializeLlm(context, model, supportAudio = isAudio && model.llmSupportAudio).onFailure { e ->
+            PocketNodeInference.preloadModel(context, model, forAudio = isAudio).onFailure { e ->
                 return Pair(null, "Error initializing model '${model.name}': ${e.message}")
             }
         }
@@ -459,58 +468,14 @@ class PocketNodeServer {
         return Pair(model, null)
     }
 
-    private suspend fun executeModelInference(
-        model: com.google.ai.edge.gallery.data.Model,
-        prompt: String,
-        audioClips: List<ByteArray>? = null
-    ): String {
-        val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
-        var fullResponse = ""
-        mutex.withLock {
-            // Reset conversation per stateless HTTP call so KV cache stays empty and Spanish system instruction is active.
-            PocketNodeInference.resetConversationForApi(
-                model = model,
-                supportAudio = !audioClips.isNullOrEmpty(),
-            )
-            val isResumed = AtomicBoolean(false)
-            try {
-                suspendCoroutine { continuation ->
-                    LlmChatModelHelper.runInference(
-                        model = model,
-                        input = prompt,
-                        audioClips = audioClips ?: emptyList(),
-                        resultListener = { partialResult, done, _ ->
-                            fullResponse += partialResult
-                            if (done && isResumed.compareAndSet(false, true)) {
-                                continuation.resume(Unit)
-                            }
-                        },
-                        cleanUpListener = {},
-                        onError = { errorMsg ->
-                            fullResponse += "\n[Error: $errorMsg]"
-                            if (isResumed.compareAndSet(false, true)) {
-                                continuation.resume(Unit)
-                            }
-                        }
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("PocketNodeServer", "Inference failed for model ${model.name}", e)
-                if (isResumed.compareAndSet(false, true)) {
-                    fullResponse += "\n[Error: ${e.message}]"
-                }
-            }
-        }
-        return fullResponse
-    }
-
     private suspend fun transcribeWithWhisper(
+        context: Context?,
         model: com.google.ai.edge.gallery.data.Model,
         samples: FloatArray,
         language: String?,
-    ): WhisperOutput {
-        val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
-        return mutex.withLock {
+    ): WhisperOutput = PocketNodeInference.modelMutex(model.name).withLock {
+        PocketNodeInference.touchActivity(context)
+        PocketNodeInference.withInferenceWakeLock(context) {
             withContext(Dispatchers.IO) {
                 val engine = model.instance as WhisperEngine
                 WhisperOutput(engine.transcribe(samples, language), engine.lastTimings)
@@ -527,12 +492,10 @@ class PocketNodeServer {
             route = "stop",
             statusCode = 200,
             durationMs = 0L,
-            detail = "Servidor HTTP detenido",
+            detail = "Servidor HTTP detenido y modelos liberados de memoria",
         )
-        // Release the Whisper weights (hundreds of MB) while the server is down.
-        PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }?.let { model ->
-            (model.instance as? WhisperEngine)?.close()
-            model.instance = null
+        CoroutineScope(Dispatchers.IO).launch {
+            PocketNodeInference.releaseAllLoadedModels()
         }
     }
 

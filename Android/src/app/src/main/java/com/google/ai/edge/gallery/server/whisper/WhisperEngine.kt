@@ -153,8 +153,8 @@ class WhisperEngine private constructor(
         private const val MAX_LEN = 128
         private const val PROMPT_LENGTH = 4
         private const val NEG_INF = -1e9f
-        private const val MIN_THREADS = 4
-        private const val MAX_THREADS = 8
+        private const val MIN_THREADS = 2
+        private const val MAX_THREADS = 4
         private const val TOKENS_PER_SECOND = 8.0
 
         private const val N_MELS = WhisperFeatureExtractor.N_MELS
@@ -172,6 +172,13 @@ class WhisperEngine private constructor(
         }
 
         /**
+         * Returns the energy-efficient thread count for mobile big.LITTLE CPUs (2..4 threads),
+         * avoiding thermal throttling and excessive battery drain.
+         */
+        internal fun optimalThreadCount(availableProcessors: Int = Runtime.getRuntime().availableProcessors()): Int =
+            (availableProcessors / 2).coerceIn(MIN_THREADS, MAX_THREADS)
+
+        /**
          * Decoding budget for one window: about 8 tokens per second of audio plus a margin, capped by
          * the fixed decoder length. Short clips stop early instead of running all 124 steps.
          */
@@ -182,7 +189,7 @@ class WhisperEngine private constructor(
 
         fun load(context: Context, modelFile: File): WhisperEngine {
             val tokenizerJson = context.assets.open("whisper/tokenizer.json").bufferedReader().use { it.readText() }
-            val threads = Runtime.getRuntime().availableProcessors().coerceIn(MIN_THREADS, MAX_THREADS)
+            val threads = optimalThreadCount()
             val options = Interpreter.Options()
                 .setNumThreads(threads)
                 .setUseXNNPACK(true)

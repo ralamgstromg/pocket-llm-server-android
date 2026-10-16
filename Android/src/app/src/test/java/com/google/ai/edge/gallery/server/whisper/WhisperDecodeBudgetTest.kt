@@ -30,4 +30,12 @@ class WhisperDecodeBudgetTest {
         assertEquals("en", WhisperEngine.resolveLanguageCode("en"))
         assertNull(WhisperEngine.resolveLanguageCode("auto"))
     }
+
+    @Test
+    fun optimalThreadCount_capsThreadsToSaveBattery() {
+        assertEquals(2, WhisperEngine.optimalThreadCount(2))
+        assertEquals(2, WhisperEngine.optimalThreadCount(4))
+        assertEquals(4, WhisperEngine.optimalThreadCount(8))
+        assertEquals(4, WhisperEngine.optimalThreadCount(12))
+    }
 }

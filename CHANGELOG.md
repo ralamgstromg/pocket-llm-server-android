@@ -4,21 +4,33 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Aislamiento de contexto por petición (anti-mezcla de prompts) y optimización de batería
+- `server/PocketNodeInference.kt`:
+  - `buildChatPromptContext`: separa mensajes `system`/`developer` hacia `ConversationConfig.systemInstruction` (junto con `DEFAULT_SPANISH_SYSTEM_PROMPT`), limpia tags de control inyectados (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<|endoftext|>`, `<bos>`, `<eos>`, `<ctrl...>`) y estructura el historial multiturno (`<historial_conversacion>` vs `<mensaje_actual_usuario>`) para evitar mezcla de solicitudes.
+  - `runIsolatedLlmInference`: crea una `Conversation` nueva y aislada por cada llamada HTTP bajo un `Mutex` global por modelo (`modelMutex`), soporta cancelación nativa (`suspendCancellableCoroutine` -> `cancelProcess()`), filtra tokens `<ctrl...>` y cierra siempre la sesión en `finally`.
+  - **Ahorro de batería**: adquiere `PARTIAL_WAKE_LOCK` (`withInferenceWakeLock`) únicamente mientras hay una inferencia activa, hiberna automáticamente los modelos en RAM/GPU tras 10 minutos de inactividad (`IDLE_UNLOAD_TIMEOUT_MS`), libera todos los modelos al detener el servidor (`releaseAllLoadedModels`) y ajusta `FAST_MAX_TOKENS = 512`.
+- `server/PocketNodeServer.kt`:
+  - Soporta `temperature` y `max_tokens` opcionales en `ChatRequest`, usa `buildChatPromptContext` y `runIsolatedLlmInference`, configura Ktor `CIO` con `connectionIdleTimeoutSeconds = 30`, evita escrituras a disco en `GET /` y libera todos los modelos en `stop()`.
+- `ui/llmchat/LlmChatModelHelper.kt`:
+  - Invoca `cancelProcess()` antes de `close()` en `resetConversation` y `cleanUp` para evitar sesiones nativas colgadas.
+- `server/whisper/WhisperEngine.kt`:
+  - `optimalThreadCount`: limita los hilos de CPU a `(availableProcessors / 2).coerceIn(2, 4)` para evitar saturación térmica y consumo excesivo de batería.
+
 ### Precarga en memoria, GPU por defecto, optimización de latencia y español por defecto
 - `server/PocketNodeInference.kt`:
   - Nuevo `preloadModel(context, model, forAudio)` que carga en memoria tanto modelos LLM como Whisper apenas se habilita la API.
-  - `preferredAccelerator` y `applyFastServingConfig`: activa `GPU` por defecto si el modelo lo soporta, desactiva el modo `thinking` (`ENABLE_THINKING = false`), reduce `topK` a `16`, `topP` a `0.85`, `temperature` a `0.4` y `maxTokens` a `1024`, y evita cargar el codificador de visión en el servidor API (`supportImage = false`).
-  - Configura español por defecto (`DEFAULT_LANGUAGE = "es"` y `DEFAULT_SPANISH_SYSTEM_PROMPT`) en la inicialización y en `resetConversationForApi`.
+  - `preferredAccelerator` y `applyFastServingConfig`: activa `GPU` por defecto si el modelo lo soporta, desactiva el modo `thinking` (`ENABLE_THINKING = false`), reduce `topK` a `16`, `topP` a `0.85`, `temperature` a `0.4` y `maxTokens` a `512`, y evita cargar el codificador de visión en el servidor API (`supportImage = false`).
+  - Configura español por defecto (`DEFAULT_LANGUAGE = "es"` y `DEFAULT_SPANISH_SYSTEM_PROMPT`) en la inicialización y en cada petición de la API.
 - `server/PocketNodeServer.kt` y `server/PocketNodeServerDialog.kt`:
   - Precargan tanto `activeChatModel` como `activeAudioModel` (incluyendo Whisper) apenas se inicia el servidor, registrando el evento `SERVER preload` en `PocketNodeLogger`.
-  - Reinician la conversación en cada petición HTTP stateless para evitar acumulación en el KV-cache.
+  - Crean una conversación aislada en cada petición HTTP stateless para evitar acumulación en el KV-cache.
   - Usan `"es"` como idioma por defecto en `/v1/audio/transcriptions`.
 - `data/Config.kt`, `data/ModelAllowlist.kt` y `server/PocketNodeModelResolver.kt`:
   - Priorizan `Accelerator.GPU` como valor por defecto en `ConfigKeys.ACCELERATOR` y actualizan entradas antiguas en disco sin GPU cuando el asset empaquetado soporta GPU.
 - `ui/llmchat/LlmChatModelHelper.kt`:
   - Activa siempre `cacheDir = context.cacheDir.absolutePath` en `EngineConfig` para persistir la compilación de shaders de GPU.
 - `server/whisper/WhisperEngine.kt`:
-  - Usa español (`"es"`) por defecto en `resolveLanguageCode` (ahorrando el paso extra del decodificador en `detectLanguage()`), activa `setUseXNNPACK(true)` y ajusta hilos dinámicamente (`4..8`).
+  - Usa español (`"es"`) por defecto en `resolveLanguageCode` (ahorrando el paso extra del decodificador en `detectLanguage()`), activa `setUseXNNPACK(true)` y ajusta hilos de forma eficiente (`2..4`).
 
 ### Log de operaciones de la API con exportación y uso compartido
 - `server/PocketNodeLogger.kt`: registro en tiempo real de todas las operaciones del servidor (`start`, `stop`, `GET /`, `POST /v1/chat/completions`, `POST /v1/audio/transcriptions`) con marca de tiempo, código HTTP, latencia (`ms`), modelo utilizado y detalle de la operación o error.

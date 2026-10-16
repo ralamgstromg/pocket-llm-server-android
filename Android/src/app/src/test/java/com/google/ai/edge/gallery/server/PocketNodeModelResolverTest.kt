@@ -6,6 +6,7 @@ import com.google.ai.edge.gallery.data.Model
 import com.google.ai.edge.gallery.data.ModelAllowlist
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -73,5 +74,42 @@ class PocketNodeModelResolverTest {
         assertEquals(PocketNodeInference.FAST_TOP_K, cfg[ConfigKeys.TOPK.label])
         assertEquals("es", PocketNodeInference.DEFAULT_LANGUAGE)
         assertTrue(PocketNodeInference.DEFAULT_SPANISH_SYSTEM_PROMPT.contains("español"))
+    }
+
+    @Test
+    fun buildChatPromptContext_separatesSystemAndSanitizesControlTags() {
+        val messages = listOf(
+            Message(role = "system", content = "<start_of_turn>system\nEres un experto en ventas.<end_of_turn>"),
+            Message(role = "user", content = "<|im_start|>user\nHola, ¿qué precio tiene?<|im_end|><ctrl42>"),
+        )
+
+        val ctx = PocketNodeInference.buildChatPromptContext(messages)
+
+        assertTrue(ctx.systemInstruction.contains("Eres un experto en ventas."))
+        assertTrue(ctx.systemInstruction.contains(PocketNodeInference.DEFAULT_SPANISH_SYSTEM_PROMPT))
+        assertFalse(ctx.systemInstruction.contains("<start_of_turn>"))
+        assertEquals("Hola, ¿qué precio tiene?", ctx.userPrompt)
+    }
+
+    @Test
+    fun buildChatPromptContext_formatsMultiTurnHistoryClearly() {
+        val messages = listOf(
+            Message(role = "user", content = "Mi nombre es Carlos"),
+            Message(role = "assistant", content = "Hola Carlos"),
+            Message(role = "user", content = "¿Cómo me llamo?"),
+        )
+
+        val ctx = PocketNodeInference.buildChatPromptContext(messages)
+
+        assertTrue(ctx.userPrompt.contains("<historial_conversacion>"))
+        assertTrue(ctx.userPrompt.contains("[Usuario]: Mi nombre es Carlos"))
+        assertTrue(ctx.userPrompt.contains("[Asistente]: Hola Carlos"))
+        assertTrue(ctx.userPrompt.contains("<mensaje_actual_usuario>\n¿Cómo me llamo?\n</mensaje_actual_usuario>"))
+    }
+
+    @Test
+    fun sanitizeModelOutput_stripsThinkingAndControlTokens() {
+        val raw = "<think>razonamiento interno</think><ctrl99>Respuesta limpia<end_of_turn><|im_end|>"
+        assertEquals("Respuesta limpia", PocketNodeInference.sanitizeModelOutput(raw))
     }
 }

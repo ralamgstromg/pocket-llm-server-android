@@ -15,9 +15,13 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
     *   `POST /v1/chat/completions`: Text generation / chat completions.
     *   `POST /v1/audio/transcriptions`: Speech-to-Text (STT) audio transcription compatible with OpenAI.
 *   **Immediate Startup Model Preloading**: Both the active Chat model and Audio STT model (including Whisper) are loaded into RAM/GPU immediately when the HTTP server is enabled, eliminating cold-start latency on the first API call.
-*   **GPU by Default & Low-Latency Optimizations**:
+*   **Strict Per-Request Context Isolation**:
+    *   Each API call runs in a fresh, disposable LiteRT-LM `Conversation` guarded by a global per-model `Mutex` with native cancellation (`cancelProcess()`), guaranteeing zero prompt or token leakage across requests.
+    *   Separates `system`/`developer` instructions into native `ConversationConfig.systemInstruction`, strips injected control tags (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<ctrl...>`), and cleanly structures multi-turn history (`<historial_conversacion>` vs `<mensaje_actual_usuario>`).
+*   **GPU by Default, Low-Latency & Battery Optimization**:
     *   Automatically enables `Accelerator.GPU` by default whenever supported by the model (with automatic fallback to `CPU` if initialization fails).
-    *   Applies a fast serving profile (`ENABLE_THINKING = false`, `topK = 16`, `topP = 0.85`, `temperature = 0.4`, `maxTokens = 1024`), persistent GPU shader cache (`cacheDir`), stateless per-request KV-cache reset, and XNNPACK multi-threaded Whisper execution.
+    *   Applies a fast serving profile (`ENABLE_THINKING = false`, `topK = 16`, `topP = 0.85`, `temperature = 0.4`, `maxTokens = 512`), persistent GPU shader cache (`cacheDir`), and balanced `2..4` XNNPACK threads for Whisper.
+    *   **Battery Saver**: Acquires `PARTIAL_WAKE_LOCK` only during active inference, hibernates idle models after 10 minutes of inactivity (auto-reloading on the next request), and releases all models from RAM/GPU when stopping the server.
 *   **Spanish by Default (`es`)**:
     *   Chat/Completion LLMs initialize with a default Spanish system instruction (`DEFAULT_SPANISH_SYSTEM_PROMPT`).
     *   Audio transcriptions (`/v1/audio/transcriptions` and `WhisperEngine`) default to Spanish (`language=es`) when no language parameter is provided, skipping the extra language-detection decoder pass in Whisper.
@@ -118,52 +122,23 @@ Pocket Node can transcribe audio with **Whisper large-v3-turbo** (`litert-commun
 3. Start the server, then transcribe:
    ```bash
    curl http://YOUR_PHONE_IP:8080/v1/audio/transcriptions \
-     -F file=@audio.wav
+     -F "file=@audio.m4a" \
+     -F "language=es"
    ```
-   The response is `{"text": "..."}`. Use `-F response_format=text` for plain text.
-
-Behaviour and limits:
-- `language` defaults to **`es` (Spanish)** when omitted, which also skips the language-detection decoder pass for faster transcription. Pass `-F language=en` for another ISO language or `-F language=auto` to force automatic detection. Unknown codes return HTTP 500 with `Internal Server Error: Idioma no soportado por Whisper: <code>` in the body.
-- Audio is decoded to 16 kHz mono, the same as the LLM STT path. The `prompt` field is ignored by Whisper.
-- Audio is processed in 30 s windows and the texts are joined. Decoding uses XNNPACK with 4–8 CPU threads.
-- Both active models (Chat and Whisper STT) load into memory immediately when the server is enabled, and Whisper weights are released when the server stops.
-- The Whisper tokenizer (`assets/whisper/tokenizer.json`, MIT, from `openai/whisper-large-v3-turbo`) is bundled in the app.
+   `language` defaults to `"es"` (Spanish). Pass `language=auto` if you want automatic language detection, or another ISO code (e.g., `en`, `pt`, `fr`).
 
 ---
 
-## 🧪 Testing the API routes & Operation Logs
+## 🧪 Testing the API from the App
 
-### Route Self-Tests
-The **Probar todas las rutas** button is always visible in **Pocket Node Server**. It is enabled once the server is running. The app calls each route on `127.0.0.1:8080` and shows a ✅ or ❌ with the HTTP code, latency, serving model name, and a short detail for:
-- `GET /`: expects the health text.
-- `POST /v1/chat/completions`: expects a non-empty `choices[0].message.content` and shows the active chat model (`Modelo: <name>`).
-- `POST /v1/audio/transcriptions`: sends one second of silence, expects a `text` field, and shows the active STT model (`Modelo: <name>`).
-
-Diagnostic response headers (outside the OpenAI-compatible API):
-- `X-Model-Name`: Sent on `/v1/chat/completions` and `/v1/audio/transcriptions` with the printable-ASCII sanitized name of the model that served the request (`headerSafe`).
-- `X-Whisper-Timings`: Sent on `/v1/audio/transcriptions` when using Whisper, containing the timing breakdown (`mel=...ms enc=...ms dec=...ms (... steps)`), also displayed in the dialog row.
-
-The app allows cleartext HTTP only for `localhost` and `127.0.0.1` (`res/xml/network_security_config.xml`), so the test can run without weakening the rest of the network policy.
-
-### API Operation Log (`PocketNodeLogger`)
-Below the route test section in **Pocket Node Server**, the **Log de Operaciones API** section records every server start/stop/preload event and HTTP request (`GET /`, `POST /v1/chat/completions`, `POST /v1/audio/transcriptions`) with timestamp, HTTP status code, latency (`ms`), model name, and operation details:
-- **Switch**: Enable or disable operation logging at any time (persisted in `SharedPreferences`).
-- **Compartir**: Shares `pocket_node_api.log` (`cacheDir/logs/pocket_node_api.log`) and its formatted text via Android's Share Sheet (`Intent.ACTION_SEND` + `FileProvider`) to any app (Email, WhatsApp, Telegram, Drive, etc.).
-- **Exportar**: Saves the log file (`pocket-node-api-<timestamp>.log`) to device storage via Android's document creator (`ActivityResultContracts.CreateDocument`).
-- **Limpiar**: Clears both in-memory entries and the cached log file.
+Open **Pocket Node Server** and tap **Probar todas las rutas** while the server is running. The app calls `127.0.0.1:8080` directly and checks:
+- `GET /` returns HTTP 200 and `Pocket Node AI is running!`.
+- `POST /v1/chat/completions` returns HTTP 200 and a non-empty `choices[0].message.content` without error markers, showing the serving model name (`Modelo: <name>`).
+- `POST /v1/audio/transcriptions` (with 1 s of 16 kHz mono WAV silence) returns HTTP 200 and a JSON `text` field without error markers, showing the serving model name and Whisper timing breakdown.
 
 ---
 
-## 📖 Upstream Features & Documentation
+## 🤝 Credits & Acknowledgments
 
-This project retains all the amazing conversational features of the standalone app, including Agentic Skills, Multimodal Image Scanning, and Audio Scribes! 
-
-To explore the original user interface capabilities and architectural deep-dives, please read the full documentation on Google's master repository:
-
-👉 **[Google AI Edge Gallery Official Repo & Wiki](https://github.com/google-ai-edge/gallery)**
-
----
-
-## 📄 License
-
-Licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
+*   **Original Base Application**: [Google AI Edge Gallery](https://github.com/google-ai-edge/gallery) by the Google AI Edge Team.
+*   **HTTP Engine**: [Ktor Server CIO](https://ktor.io/) for lightweight asynchronous networking on Android.

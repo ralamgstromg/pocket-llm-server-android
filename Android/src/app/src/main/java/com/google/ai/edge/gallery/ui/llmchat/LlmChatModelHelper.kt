@@ -219,7 +219,8 @@ object LlmChatModelHelper : LlmModelHelper {
       Log.d(TAG, "Resetting conversation for model '${model.name}'")
 
       val instance = model.instance as LlmModelInstance? ?: return
-      instance.conversation.close()
+      runCatching { instance.conversation.cancelProcess() }
+      runCatching { instance.conversation.close() }
 
       val engine = instance.engine
       val topK = model.getIntConfigValue(key = ConfigKeys.TOPK, defaultValue = DEFAULT_TOPK)
@@ -271,6 +272,7 @@ object LlmChatModelHelper : LlmModelHelper {
     val instance = model.instance as LlmModelInstance
 
     try {
+      runCatching { instance.conversation.cancelProcess() }
       instance.conversation.close()
     } catch (e: Exception) {
       Log.e(TAG, "Failed to close the conversation: ${e.message}")
