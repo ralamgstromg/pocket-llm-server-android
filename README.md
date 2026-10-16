@@ -18,9 +18,12 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 *   **Strict Per-Request Context Isolation**:
     *   Each API call runs in a fresh, disposable LiteRT-LM `Conversation` guarded by a global per-model `Mutex` with native cancellation (`cancelProcess()`), guaranteeing zero prompt or token leakage across requests.
     *   Separates `system`/`developer` instructions into native `ConversationConfig.systemInstruction`, strips injected control tags (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<ctrl...>`), and cleanly structures multi-turn history (`<historial_conversacion>` vs `<mensaje_actual_usuario>`).
+*   **8,000 Tokens by Default (Configurable in UI & API)**:
+    *   Configured to **8,000 tokens** (`DEFAULT_MAX_TOKENS = 8000`) by default so long prompts and responses fit comfortably.
+    *   Editable directly in **Pocket Node Server** (`256..32768`, with quick presets `2048`, `4096`, `8000`, `16384`) or per HTTP request via `"max_tokens"` in `POST /v1/chat/completions`.
 *   **GPU by Default, Low-Latency & Battery Optimization**:
     *   Automatically enables `Accelerator.GPU` by default whenever supported by the model (with automatic fallback to `CPU` if initialization fails).
-    *   Applies a fast serving profile (`ENABLE_THINKING = false`, `topK = 16`, `topP = 0.85`, `temperature = 0.4`, `maxTokens = 512`), persistent GPU shader cache (`cacheDir`), and balanced `2..4` XNNPACK threads for Whisper.
+    *   Applies a fast serving profile (`ENABLE_THINKING = false`, `topK = 16`, `topP = 0.85`, `temperature = 0.4`, `maxTokens = 8000`), persistent GPU shader cache (`cacheDir`), and balanced `2..4` XNNPACK threads for Whisper.
     *   **Battery Saver**: Acquires `PARTIAL_WAKE_LOCK` only during active inference, hibernates idle models after 10 minutes of inactivity (auto-reloading on the next request), and releases all models from RAM/GPU when stopping the server.
 *   **Spanish by Default (`es`)**:
     *   Chat/Completion LLMs initialize with a default Spanish system instruction (`DEFAULT_SPANISH_SYSTEM_PROMPT`).
@@ -28,7 +31,7 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 *   **Interactive Model Configuration UI**: Select your desired active models directly in the app before starting the HTTP server:
     *   **Chat / Completions Model**: Dedicated model selector for text generation.
     *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
-    *   **Persistent Preferences**: Model choices are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
+    *   **Persistent Preferences**: Model choices and token budget are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
 *   **API Operation Logging, Export & Share**:
     *   Real-time operation log (`PocketNodeLogger`) capturing timestamps, routes, HTTP status codes, latency (`ms`), serving model name, and payload/timing details.
     *   Toggle logging on/off, view recent requests live in **Pocket Node Server**, **Export** logs to a `.log` file (`CreateDocument`), or **Share** logs directly with other apps (Email, WhatsApp, Telegram, Drive) via `FileProvider`.
@@ -47,6 +50,7 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 3. **Configure & Start Server**: Open the left-side navigation drawer, tap **Pocket Node Server** to open the server dialog:
    - Choose your **Chat / Completions Model**.
    - Choose your **Audio STT Model**.
+   - Adjust **Máximo de Tokens por Petición** (defaults to `8000`).
    - Tap **Iniciar Servidor HTTP** to preload both models into memory and ignite the background service!
 4. **Test it out**:
    - **Text Completion**:
@@ -54,6 +58,7 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
      curl http://<YOUR_PHONE_IP>:8080/v1/chat/completions \
        -H "Content-Type: application/json" \
        -d '{
+         "max_tokens": 8000,
          "messages": [
            {
              "role": "user",

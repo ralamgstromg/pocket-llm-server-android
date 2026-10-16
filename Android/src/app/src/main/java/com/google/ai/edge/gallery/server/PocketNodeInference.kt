@@ -47,7 +47,7 @@ internal data class ChatPromptContext(
 /**
  * Loads, isolates, and manages models for Pocket Node API serving:
  * - Enables GPU by default when supported by the model (with CPU fallback).
- * - Applies fast sampling/token defaults and disables thinking overhead.
+ * - Applies fast sampling/token defaults (8000 tokens default, configurable via UI or per-request `max_tokens`).
  * - Uses Spanish ("es") as the default language and system instruction.
  * - Isolates each HTTP inference into its own disposable LiteRT-LM [com.google.ai.edge.litertlm.Conversation]
  *   guarded by a global per-model [Mutex] so requests never mix context or tokens.
@@ -60,7 +60,7 @@ object PocketNodeInference {
         "Responde siempre en español de forma clara, directa y concisa, salvo que el usuario solicite explícitamente otro idioma. " +
             "Atiende únicamente la solicitud actual del usuario sin mezclar contextos previos ni emitir etiquetas de rol."
 
-    internal const val FAST_MAX_TOKENS = 512
+    internal const val FAST_MAX_TOKENS = PocketNodeState.DEFAULT_MAX_TOKENS
     internal const val FAST_TOP_K = 16
     internal const val FAST_TOP_P = 0.85f
     internal const val FAST_TEMPERATURE = 0.4f
@@ -158,14 +158,18 @@ object PocketNodeInference {
         if (Accelerator.GPU in model.accelerators) Accelerator.GPU
         else model.accelerators.firstOrNull() ?: Accelerator.CPU
 
-    /** Applies low-latency, battery-conscious serving settings and GPU preference to [model.configValues]. */
+    /**
+     * Applies serving settings and GPU preference to [model.configValues].
+     * Uses [maxTokensOverride] if provided, otherwise [PocketNodeState.configuredMaxTokens] (default 8000),
+     * without clamping down to the catalog's default `llmMaxToken` (1024/4096) so 8000-token requests succeed.
+     */
     internal fun applyFastServingConfig(
         model: Model,
         accelerator: Accelerator = preferredAccelerator(model),
         maxTokensOverride: Int? = null,
     ): Map<String, Any> {
-        val modelCap = model.llmMaxToken.takeIf { it > 0 } ?: FAST_MAX_TOKENS
-        val targetMaxTokens = (maxTokensOverride?.takeIf { it > 0 } ?: FAST_MAX_TOKENS).coerceAtMost(modelCap)
+        val requestedTokens = maxTokensOverride?.takeIf { it > 0 } ?: PocketNodeState.configuredMaxTokens
+        val targetMaxTokens = PocketNodeState.clampMaxTokens(requestedTokens)
         val updated = model.configValues.toMutableMap().apply {
             put(ConfigKeys.ACCELERATOR.label, accelerator.label)
             put(ConfigKeys.USE_GPU.label, accelerator == Accelerator.GPU)
@@ -180,12 +184,21 @@ object PocketNodeInference {
     }
 
     /** Preloads either a Whisper TFLite model or an LLM model into memory immediately (thread-safe). */
-    suspend fun preloadModel(context: Context, model: Model, forAudio: Boolean): Result<String> =
-        modelMutex(model.name).withLock {
-            preloadModelLocked(context, model, forAudio)
-        }
+    suspend fun preloadModel(
+        context: Context,
+        model: Model,
+        forAudio: Boolean,
+        maxTokensOverride: Int? = null,
+    ): Result<String> = modelMutex(model.name).withLock {
+        preloadModelLocked(context, model, forAudio, maxTokensOverride)
+    }
 
-    internal suspend fun preloadModelLocked(context: Context, model: Model, forAudio: Boolean): Result<String> {
+    internal suspend fun preloadModelLocked(
+        context: Context,
+        model: Model,
+        forAudio: Boolean,
+        maxTokensOverride: Int? = null,
+    ): Result<String> {
         touchActivity(context)
         val modelFile = File(model.getPath(context))
         if (!modelFile.exists() || modelFile.length() == 0L) {
@@ -206,6 +219,7 @@ object PocketNodeInference {
             context = context,
             model = model,
             supportAudio = forAudio && model.llmSupportAudio,
+            maxTokensOverride = maxTokensOverride,
         ).map { it.label }
     }
 
@@ -214,21 +228,36 @@ object PocketNodeInference {
         context: Context,
         model: Model,
         supportAudio: Boolean = model.llmSupportAudio,
+        maxTokensOverride: Int? = null,
     ): Result<Accelerator> = modelMutex(model.name).withLock {
-        initializeLlmLocked(context, model, supportAudio)
+        initializeLlmLocked(context, model, supportAudio, maxTokensOverride)
     }
 
     internal suspend fun initializeLlmLocked(
         context: Context,
         model: Model,
         supportAudio: Boolean = model.llmSupportAudio,
+        maxTokensOverride: Int? = null,
     ): Result<Accelerator> {
         touchActivity(context)
-        if (model.instance != null) {
+        val desiredMaxTokens = PocketNodeState.clampMaxTokens(
+            maxTokensOverride?.takeIf { it > 0 } ?: PocketNodeState.configuredMaxTokens
+        )
+        val currentMaxTokens = model.getIntConfigValue(
+            key = ConfigKeys.MAX_TOKENS,
+            defaultValue = PocketNodeState.DEFAULT_MAX_TOKENS,
+        )
+
+        if (model.instance != null && currentMaxTokens == desiredMaxTokens) {
             val current = Accelerator.entries.firstOrNull {
                 it.label == model.configValues[ConfigKeys.ACCELERATOR.label]
             }
             return Result.success(current ?: preferredAccelerator(model))
+        }
+
+        if (model.instance != null && currentMaxTokens != desiredMaxTokens) {
+            Log.i(TAG, "Reinitializing '${model.name}' to apply new maxTokens=$desiredMaxTokens (was $currentMaxTokens)")
+            LlmChatModelHelper.cleanUp(model, onDone = {})
         }
 
         val preferred = preferredAccelerator(model)
@@ -236,10 +265,10 @@ object PocketNodeInference {
 
         var lastError = "Failed to load model into RAM"
         for (accelerator in order) {
-            applyFastServingConfig(model, accelerator)
+            applyFastServingConfig(model, accelerator, maxTokensOverride = desiredMaxTokens)
             val error = initializeOnce(context, model, supportAudio = supportAudio)
             if (error == null) {
-                Log.i(TAG, "Model '${model.name}' loaded on ${accelerator.label} (Spanish + fast config)")
+                Log.i(TAG, "Model '${model.name}' loaded on ${accelerator.label} (maxTokens=$desiredMaxTokens, Spanish)")
                 return Result.success(accelerator)
             }
             Log.w(TAG, "Model '${model.name}' failed on ${accelerator.label}: $error")
@@ -261,9 +290,29 @@ object PocketNodeInference {
         systemInstruction: String = DEFAULT_SPANISH_SYSTEM_PROMPT,
         audioClips: List<ByteArray> = emptyList(),
         temperatureOverride: Float? = null,
+        maxTokensOverride: Int? = null,
     ): String = modelMutex(model.name).withLock {
         touchActivity(context)
         withInferenceWakeLock(context) {
+            // Reinitialize engine if a per-request or UI-configured maxTokens change requires a new token budget
+            val targetMaxTokens = PocketNodeState.clampMaxTokens(
+                maxTokensOverride?.takeIf { it > 0 } ?: PocketNodeState.configuredMaxTokens
+            )
+            val currentMaxTokens = model.getIntConfigValue(
+                key = ConfigKeys.MAX_TOKENS,
+                defaultValue = PocketNodeState.DEFAULT_MAX_TOKENS,
+            )
+            if (context != null && (model.instance == null || currentMaxTokens != targetMaxTokens)) {
+                initializeLlmLocked(
+                    context = context,
+                    model = model,
+                    supportAudio = audioClips.isNotEmpty() && model.llmSupportAudio,
+                    maxTokensOverride = targetMaxTokens,
+                ).onFailure { e ->
+                    return@withInferenceWakeLock "[Error: ${e.message}]"
+                }
+            }
+
             val instance = model.instance as? LlmModelInstance
                 ?: return@withInferenceWakeLock "[Error: LlmModelInstance is not initialized.]"
 

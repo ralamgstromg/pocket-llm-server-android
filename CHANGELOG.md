@@ -4,13 +4,22 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Límite de tokens por petición en 8000 por defecto y configurable en UI / API
+- `server/PocketNodeState.kt`:
+  - Nuevo `DEFAULT_MAX_TOKENS = 8000` (`MIN_MAX_TOKENS = 256`, `MAX_MAX_TOKENS = 32768`) y estado reactivo `configuredMaxTokens` persistido en `SharedPreferences` (`api_max_tokens`).
+- `server/PocketNodeServerDialog.kt`:
+  - Nuevo control editable **Máximo de Tokens por Petición (Contexto + Respuesta)** (iniciado en `8000`) con selector rápido (`2048`, `4096`, `8000`, `16384`).
+- `server/PocketNodeInference.kt` y `server/PocketNodeServer.kt`:
+  - `applyFastServingConfig` aplica `configuredMaxTokens` (`8000` por defecto) o `max_tokens` enviado en el JSON de `/v1/chat/completions` directamente sobre `ConfigKeys.MAX_TOKENS` sin recortarlo al `llmMaxToken` base del catálogo (`1024`/`4096`).
+  - Si cambia el límite de tokens en la UI o por petición HTTP, `initializeLlmLocked` / `runIsolatedLlmInference` reinicializa el motor LiteRT-LM con la nueva ventana de tokens.
+
 ### Aislamiento de contexto por petición (anti-mezcla de prompts) y optimización de batería
 - `server/PocketNodeInference.kt`:
   - `buildChatPromptContext`: separa mensajes `system`/`developer` hacia `ConversationConfig.systemInstruction` (junto con `DEFAULT_SPANISH_SYSTEM_PROMPT`), limpia tags de control inyectados (`<start_of_turn>`, `<end_of_turn>`, `<|im_start|>`, `<|im_end|>`, `<|endoftext|>`, `<bos>`, `<eos>`, `<ctrl...>`) y estructura el historial multiturno (`<historial_conversacion>` vs `<mensaje_actual_usuario>`) para evitar mezcla de solicitudes.
   - `runIsolatedLlmInference`: crea una `Conversation` nueva y aislada por cada llamada HTTP bajo un `Mutex` global por modelo (`modelMutex`), soporta cancelación nativa (`suspendCancellableCoroutine` -> `cancelProcess()`), filtra tokens `<ctrl...>` y cierra siempre la sesión en `finally`.
-  - **Ahorro de batería**: adquiere `PARTIAL_WAKE_LOCK` (`withInferenceWakeLock`) únicamente mientras hay una inferencia activa, hiberna automáticamente los modelos en RAM/GPU tras 10 minutos de inactividad (`IDLE_UNLOAD_TIMEOUT_MS`), libera todos los modelos al detener el servidor (`releaseAllLoadedModels`) y ajusta `FAST_MAX_TOKENS = 512`.
+  - **Ahorro de batería**: adquiere `PARTIAL_WAKE_LOCK` (`withInferenceWakeLock`) únicamente mientras hay una inferencia activa, hiberna automáticamente los modelos en RAM/GPU tras 10 minutos de inactividad (`IDLE_UNLOAD_TIMEOUT_MS`) y libera todos los modelos al detener el servidor (`releaseAllLoadedModels`).
 - `server/PocketNodeServer.kt`:
-  - Soporta `temperature` y `max_tokens` opcionales en `ChatRequest`, usa `buildChatPromptContext` y `runIsolatedLlmInference`, configura Ktor `CIO` con `connectionIdleTimeoutSeconds = 30`, evita escrituras a disco en `GET /` y libera todos los modelos en `stop()`.
+  - Soporta `temperature` y `max_tokens` opcionales en `ChatRequest`, usa `buildChatPromptContext` y `runIsolatedLlmInference`, evita escrituras a disco en `GET /` y libera todos los modelos en `stop()`.
 - `ui/llmchat/LlmChatModelHelper.kt`:
   - Invoca `cancelProcess()` antes de `close()` en `resetConversation` y `cleanUp` para evitar sesiones nativas colgadas.
 - `server/whisper/WhisperEngine.kt`:
@@ -19,7 +28,7 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 ### Precarga en memoria, GPU por defecto, optimización de latencia y español por defecto
 - `server/PocketNodeInference.kt`:
   - Nuevo `preloadModel(context, model, forAudio)` que carga en memoria tanto modelos LLM como Whisper apenas se habilita la API.
-  - `preferredAccelerator` y `applyFastServingConfig`: activa `GPU` por defecto si el modelo lo soporta, desactiva el modo `thinking` (`ENABLE_THINKING = false`), reduce `topK` a `16`, `topP` a `0.85`, `temperature` a `0.4` y `maxTokens` a `512`, y evita cargar el codificador de visión en el servidor API (`supportImage = false`).
+  - `preferredAccelerator` y `applyFastServingConfig`: activa `GPU` por defecto si el modelo lo soporta, desactiva el modo `thinking` (`ENABLE_THINKING = false`), reduce `topK` a `16`, `topP` a `0.85`, `temperature` a `0.4`, y evita cargar el codificador de visión en el servidor API (`supportImage = false`).
   - Configura español por defecto (`DEFAULT_LANGUAGE = "es"` y `DEFAULT_SPANISH_SYSTEM_PROMPT`) en la inicialización y en cada petición de la API.
 - `server/PocketNodeServer.kt` y `server/PocketNodeServerDialog.kt`:
   - Precargan tanto `activeChatModel` como `activeAudioModel` (incluyendo Whisper) apenas se inicia el servidor, registrando el evento `SERVER preload` en `PocketNodeLogger`.

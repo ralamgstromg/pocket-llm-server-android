@@ -65,7 +65,10 @@ class PocketNodeServer {
 
     fun start(context: Context? = null) {
         if (server != null) return
-        context?.let { PocketNodeLogger.loadPreferences(it) }
+        context?.let {
+            PocketNodeState.loadPreferences(it)
+            PocketNodeLogger.loadPreferences(it)
+        }
         PocketNodeState.isServerRunning = true
         PocketNodeState.lastStartupError = null
 
@@ -133,12 +136,14 @@ class PocketNodeServer {
 
                                 resolvedModelName = model.name
                                 call.response.headers.append(MODEL_HEADER, headerSafe(model.name))
+                                val effectiveMaxTokens = req.maxTokens ?: PocketNodeState.configuredMaxTokens
                                 val fullResponse = PocketNodeInference.runIsolatedLlmInference(
                                     context = context,
                                     model = model,
                                     prompt = promptContext.userPrompt,
                                     systemInstruction = promptContext.systemInstruction,
                                     temperatureOverride = req.temperature,
+                                    maxTokensOverride = req.maxTokens,
                                 )
                                 val reply = ChatResponse(
                                     id = "chatcmpl-${System.currentTimeMillis()}",
@@ -151,7 +156,7 @@ class PocketNodeServer {
                                     statusCode = HttpStatusCode.OK.value,
                                     durationMs = System.currentTimeMillis() - startMs,
                                     model = model.name,
-                                    detail = "msgs=${req.messages.size}, prompt=${promptContext.userPrompt.length} chars, reply=${fullResponse.take(80)}",
+                                    detail = "msgs=${req.messages.size}, maxTokens=$effectiveMaxTokens, prompt=${promptContext.userPrompt.length} chars, reply=${fullResponse.take(80)}",
                                     context = context,
                                 )
                                 call.respond(reply)
@@ -327,7 +332,7 @@ class PocketNodeServer {
                     statusCode = 200,
                     durationMs = 0L,
                     model = PocketNodeState.activeChatModel?.name ?: PocketNodeState.activeAudioModel?.name,
-                    detail = "Servidor HTTP iniciado en puerto $PORT",
+                    detail = "Servidor HTTP iniciado en puerto $PORT (maxTokens=${PocketNodeState.configuredMaxTokens})",
                     context = context,
                 )
             } catch (e: Exception) {
@@ -365,7 +370,7 @@ class PocketNodeServer {
                             statusCode = 200,
                             durationMs = System.currentTimeMillis() - startMs,
                             model = chatModel.name,
-                            detail = "Modelo chat precargado en $backend (español)",
+                            detail = "Modelo chat precargado en $backend (español, maxTokens=${PocketNodeState.configuredMaxTokens})",
                             context = context,
                         )
                     }

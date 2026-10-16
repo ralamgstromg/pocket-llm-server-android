@@ -10,6 +10,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -29,15 +31,17 @@ import com.google.ai.edge.gallery.data.Model
 import com.google.ai.edge.gallery.data.ModelDownloadStatusType
 import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 private fun Model.isDownloaded(context: Context): Boolean {
     val file = File(getPath(context))
     return file.exists() && file.length() > 0L
 }
+
+private val TOKEN_PRESETS = listOf(2048, 4096, 8000, 16384)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +70,9 @@ fun PocketNodeServerDialog(
     var selectedAudioModelName by remember {
         mutableStateOf(PocketNodeState.preferredAudioModelName.ifEmpty { PocketNodeState.activeAudioModel?.name ?: "" })
     }
+    var maxTokensText by remember {
+        mutableStateOf(PocketNodeState.configuredMaxTokens.toString())
+    }
 
     var chatDropdownExpanded by remember { mutableStateOf(false) }
     var audioDropdownExpanded by remember { mutableStateOf(false) }
@@ -89,6 +96,7 @@ fun PocketNodeServerDialog(
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
         PocketNodeLogger.loadPreferences(context)
+        maxTokensText = PocketNodeState.configuredMaxTokens.toString()
         if (selectedChatModelName.isEmpty() && allModels.isNotEmpty()) {
             selectedChatModelName = PocketNodeState.preferredChatModelName.ifEmpty { allModels.first().name }
         }
@@ -161,7 +169,7 @@ fun PocketNodeServerDialog(
                             )
                             if (PocketNodeState.isServerRunning) {
                                 Text(
-                                    text = "http://localhost:${PocketNodeServer.PORT}",
+                                    text = "http://localhost:${PocketNodeServer.PORT} · ${PocketNodeState.configuredMaxTokens} tokens",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -300,12 +308,69 @@ fun PocketNodeServerDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Configurable Max Tokens per request (default 8000)
+                Text(
+                    text = "Máximo de Tokens por Petición (Contexto + Respuesta):",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = maxTokensText,
+                    onValueChange = { newText ->
+                        val digitsOnly = newText.filter { it.isDigit() }
+                        maxTokensText = digitsOnly
+                        digitsOnly.toIntOrNull()?.let { parsed ->
+                            PocketNodeState.savePreferences(
+                                context = context,
+                                chatModelName = selectedChatModelName,
+                                audioModelName = selectedAudioModelName,
+                                maxTokens = parsed,
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            text = "Por defecto: ${PocketNodeState.DEFAULT_MAX_TOKENS} (rango ${PocketNodeState.MIN_MAX_TOKENS}..${PocketNodeState.MAX_MAX_TOKENS})",
+                            fontSize = 11.sp,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TOKEN_PRESETS.forEach { preset ->
+                        FilterChip(
+                            selected = PocketNodeState.configuredMaxTokens == preset,
+                            onClick = {
+                                maxTokensText = preset.toString()
+                                PocketNodeState.savePreferences(
+                                    context = context,
+                                    chatModelName = selectedChatModelName,
+                                    audioModelName = selectedAudioModelName,
+                                    maxTokens = preset,
+                                )
+                                statusMessage = "✅ Límite ajustado a $preset tokens."
+                            },
+                            label = { Text("$preset", fontSize = 12.sp) },
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Action Toggle Button
                 Button(
                     enabled = !isInitializing,
                     onClick = {
+                        val parsedTokens = maxTokensText.toIntOrNull() ?: PocketNodeState.DEFAULT_MAX_TOKENS
                         val matchedChat = allModels.find { it.name == selectedChatModelName }
                         if (matchedChat != null) {
                             PocketNodeState.activeChatModel = matchedChat
@@ -315,7 +380,13 @@ fun PocketNodeServerDialog(
                             PocketNodeState.activeAudioModel = matchedAudio
                         }
                         PocketNodeState.syncSharedModels()
-                        PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
+                        PocketNodeState.savePreferences(
+                            context = context,
+                            chatModelName = selectedChatModelName,
+                            audioModelName = selectedAudioModelName,
+                            maxTokens = parsedTokens,
+                        )
+                        maxTokensText = PocketNodeState.configuredMaxTokens.toString()
 
                         val intent = Intent(context, PocketNodeService::class.java)
                         if (PocketNodeState.isServerRunning) {
@@ -335,7 +406,7 @@ fun PocketNodeServerDialog(
                             }
 
                             isInitializing = true
-                            statusMessage = "⏳ Cargando modelos en memoria (GPU / Español)..."
+                            statusMessage = "⏳ Cargando modelos en memoria (GPU / Español / ${PocketNodeState.configuredMaxTokens} tokens)..."
 
                             scope.launch {
                                 val loadedSummary = mutableListOf<String>()
@@ -369,7 +440,7 @@ fun PocketNodeServerDialog(
 
                                 isInitializing = false
                                 statusMessage = if (loadedSummary.isNotEmpty()) {
-                                    "✅ Modelos en memoria: ${loadedSummary.joinToString(", ")}"
+                                    "✅ Modelos en memoria (${PocketNodeState.configuredMaxTokens} tokens): ${loadedSummary.joinToString(", ")}"
                                 } else {
                                     "✅ Servidor iniciado."
                                 }
