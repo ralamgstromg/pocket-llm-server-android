@@ -130,6 +130,8 @@ The **Probar todas las rutas** button is always visible in **Pocket Node Server*
 - `POST /v1/chat/completions`: expects a non-empty `choices[0].message.content`.
 - `POST /v1/audio/transcriptions`: sends one second of silence and expects a `text` field.
 
+For the transcription route, the row also shows the Whisper timing breakdown (mel, encoder, and decoder steps). The server sends the same data in the `X-Whisper-Timings` response header, a diagnostic header outside the OpenAI-compatible API.
+
 The app allows cleartext HTTP only for `localhost` and `127.0.0.1` (`res/xml/network_security_config.xml`), so the test can run without weakening the rest of the network policy.
 
 ---

@@ -3,6 +3,7 @@ package com.google.ai.edge.gallery.server
 import android.content.Context
 import android.util.Log
 import com.google.ai.edge.gallery.server.whisper.WhisperEngine
+import com.google.ai.edge.gallery.server.whisper.WhisperTimings
 import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
@@ -44,6 +45,11 @@ data class Choice(val message: Message)
 
 @Serializable
 data class TranscriptionResponse(val text: String)
+
+/** Diagnostic header with the Whisper timing breakdown. Not part of the OpenAI-compatible API. */
+const val TIMINGS_HEADER = "X-Whisper-Timings"
+
+private class WhisperOutput(val text: String, val timings: WhisperTimings?)
 
 class PocketNodeServer {
     companion object {
@@ -138,13 +144,16 @@ class PocketNodeServer {
                                 return@post
                             }
 
+                            var whisperTimings: WhisperTimings? = null
                             val cleanText = if (audioModel.isWhisperStt) {
                                 val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
                                 if (samples == null) {
                                     call.respondText("Error: audio no decodificable a 16 kHz mono.", status = HttpStatusCode.BadRequest)
                                     return@post
                                 }
-                                transcribeWithWhisper(audioModel, samples, languageParam)
+                                val output = transcribeWithWhisper(audioModel, samples, languageParam)
+                                whisperTimings = output.timings
+                                output.text
                             } else {
                                 // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
                                 val processedAudioBytes = if (context != null) {
@@ -166,6 +175,7 @@ class PocketNodeServer {
                                 val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
                                 sanitizeSpokenText(fullResponse)
                             }
+                            whisperTimings?.let { call.response.headers.append(TIMINGS_HEADER, it.toHeaderValue()) }
                             if (responseFormatParam.equals("text", ignoreCase = true)) {
                                 call.respondText(cleanText, ContentType.Text.Plain)
                             } else {
@@ -309,10 +319,13 @@ class PocketNodeServer {
         model: com.google.ai.edge.gallery.data.Model,
         samples: FloatArray,
         language: String?,
-    ): String {
+    ): WhisperOutput {
         val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
         return mutex.withLock {
-            withContext(Dispatchers.IO) { (model.instance as WhisperEngine).transcribe(samples, language) }
+            withContext(Dispatchers.IO) {
+                val engine = model.instance as WhisperEngine
+                WhisperOutput(engine.transcribe(samples, language), engine.lastTimings)
+            }
         }
     }
 

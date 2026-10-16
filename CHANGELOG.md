@@ -4,6 +4,12 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Correcciones del test de rutas
+- `PocketNodeApiTester`: las respuestas correctas de chat y audio se marcaban como ❌ porque el texto de éxito se trataba como error. Ahora los verificadores devuelven un `Verdict` y el éxito conserva su detalle.
+- Nuevas pruebas (`PocketNodeApiTesterTest`) que cubren el caso de regresión.
+- Diagnóstico de latencia: `WhisperEngine.lastTimings` y la cabecera `X-Whisper-Timings` en `/v1/audio/transcriptions` (mel, encoder, pasos de decodificación), mostrada en la fila de audio del diálogo.
+
+
 ### GPU por defecto y rendimiento de la API
 - `server/PocketNodeInference.kt`: inicialización única de los LLM para servidor y diálogo. Usa GPU si el modelo la soporta y repite en CPU si falla. Registra el backend final (`Modelo cargado en GPU/CPU`). Reemplaza dos copias de `LlmChatModelHelper.initialize`.
 - `assets/model_allowlists/1_0_11.json`: Gemma-3n-E2B y E4B pasan a `gpu,cpu` (antes arrancaban en CPU).
