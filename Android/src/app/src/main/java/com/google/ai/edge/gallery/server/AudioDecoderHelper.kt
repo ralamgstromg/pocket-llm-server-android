@@ -10,16 +10,17 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.abs
 import kotlin.math.floor
 
 private const val TAG = "AudioDecoderHelper"
-private const val TARGET_SAMPLE_RATE = 16000
+internal const val TARGET_SAMPLE_RATE = 16000
 
 object AudioDecoderHelper {
 
     /**
      * Decodes any audio byte array (MP3, M4A, AAC, OGG, FLAC, WAV, AMR) into a 16-bit 16kHz Mono PCM WAV byte array.
-     * Returns original bytes if already 16kHz mono WAV, or decoded PCM WAV bytes, or null on failure.
+     * Returns original bytes if already 16kHz mono WAV, or decoded PCM WAV bytes.
      */
     fun decodeToMonoPcmWav(context: Context, audioBytes: ByteArray): ByteArray {
         if (audioBytes.isEmpty()) return audioBytes
@@ -169,14 +170,17 @@ object AudioDecoderHelper {
     }
 
     /**
-     * Decodes any supported audio into 16 kHz mono float samples in [-1, 1].
-     * Returns null when the audio cannot be decoded to that format.
+     * Decodes any supported audio into raw 16 kHz mono 16-bit little-endian PCM bytes (without WAV header).
+     * Returns null when the audio cannot be decoded to 16 kHz 16-bit mono PCM.
      */
-    fun decodeToMono16kSamples(context: Context, audioBytes: ByteArray): FloatArray? {
-        return wavToFloatSamples(decodeToMonoPcmWav(context, audioBytes))
-    }
+    fun decodeToMono16kPcmBytes(context: Context, audioBytes: ByteArray): ByteArray? =
+        extractWavPcm16kMonoBytes(decodeToMonoPcmWav(context, audioBytes))
 
-    private fun wavToFloatSamples(wav: ByteArray): FloatArray? {
+    /**
+     * Extracts raw 16-bit little-endian PCM bytes from a 16 kHz mono WAV container.
+     * Returns null if [wav] is not a valid 16 kHz mono 16-bit WAV.
+     */
+    internal fun extractWavPcm16kMonoBytes(wav: ByteArray): ByteArray? {
         if (wav.size < 12 || String(wav, 0, 4) != "RIFF" || String(wav, 8, 4) != "WAVE") return null
         val buffer = ByteBuffer.wrap(wav).order(ByteOrder.LITTLE_ENDIAN)
         var pos = 12
@@ -193,13 +197,28 @@ object AudioDecoderHelper {
                 }
                 "data" -> {
                     if (!formatOk) return null
-                    val available = minOf(chunkSize, wav.size - pos - 8) / 2
-                    return FloatArray(available) { buffer.getShort(pos + 8 + it * 2) / 32768f }
+                    val availableBytes = minOf(chunkSize, wav.size - pos - 8).let { it - (it and 1) }
+                    if (availableBytes <= 0) return ByteArray(0)
+                    return wav.copyOfRange(pos + 8, pos + 8 + availableBytes)
                 }
             }
             pos += 8 + chunkSize + (chunkSize and 1)
         }
         return null
+    }
+
+    /**
+     * Returns true if the 16-bit little-endian PCM buffer is pure digital silence or near-zero background floor
+     * (peak amplitude <= [maxSilenceAmplitude]), allowing instant `< 1 ms` short-circuit without waking SpeechRecognizer.
+     */
+    internal fun isPcmSilence(pcmBytes: ByteArray, maxSilenceAmplitude: Int = 180): Boolean {
+        if (pcmBytes.size < 2) return true
+        val shorts = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        while (shorts.hasRemaining()) {
+            val sample = shorts.get().toInt()
+            if (abs(sample) > maxSilenceAmplitude) return false
+        }
+        return true
     }
 
     private fun is16kHzMonoWav(bytes: ByteArray): Boolean {

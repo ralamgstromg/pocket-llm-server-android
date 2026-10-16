@@ -10,8 +10,6 @@ import com.google.ai.edge.gallery.data.DEFAULT_TEMPERATURE
 import com.google.ai.edge.gallery.data.DEFAULT_TOPK
 import com.google.ai.edge.gallery.data.DEFAULT_TOPP
 import com.google.ai.edge.gallery.data.Model
-import com.google.ai.edge.gallery.server.whisper.WhisperEngine
-import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import com.google.ai.edge.gallery.ui.llmchat.LlmModelInstance
 import com.google.ai.edge.litertlm.Content
@@ -46,7 +44,7 @@ internal data class ChatPromptContext(
 )
 
 /**
- * Loads, isolates, and manages models for Pocket Node API serving:
+ * Loads, isolates, and manages LLM models for Pocket Node API serving:
  * - Enables GPU by default when supported by the model (with CPU fallback).
  * - Applies fast sampling/token defaults (8000 tokens default, configurable via UI or per-request `max_tokens`).
  * - Uses Spanish ("es") as the default language and system instruction.
@@ -197,7 +195,7 @@ object PocketNodeInference {
     }
 
     /** Frees any other loaded model before loading [targetModel] if system RAM is tight, preventing background swap drain. */
-    private suspend fun guardMemoryBeforeLoad(context: Context, targetModel: Model) {
+    private fun guardMemoryBeforeLoad(context: Context, targetModel: Model) {
         if (hasEnoughRamForDualResidency(context)) return
         val otherModels = listOfNotNull(
             PocketNodeState.activeChatModel,
@@ -206,21 +204,16 @@ object PocketNodeInference {
         ).distinctBy { it.name }.filter { it.name != targetModel.name && it.instance != null }
 
         for (other in otherModels) {
-            if (other.isWhisperStt) {
-                runCatching { (other.instance as? WhisperEngine)?.close() }
-                other.instance = null
-            } else {
-                LlmChatModelHelper.cleanUp(other, onDone = {})
-            }
+            LlmChatModelHelper.cleanUp(other, onDone = {})
             Log.i(TAG, "Evicted '${other.name}' to prevent low-RAM zram thrashing before loading '${targetModel.name}'")
         }
     }
 
-    /** Preloads either a Whisper TFLite model or an LLM model into memory immediately (thread-safe). */
+    /** Preloads an LLM model into memory immediately (thread-safe). */
     suspend fun preloadModel(
         context: Context,
         model: Model,
-        forAudio: Boolean,
+        forAudio: Boolean = false,
         maxTokensOverride: Int? = null,
     ): Result<String> = modelMutex(model.name).withLock {
         preloadModelLocked(context, model, forAudio, maxTokensOverride)
@@ -229,7 +222,7 @@ object PocketNodeInference {
     internal suspend fun preloadModelLocked(
         context: Context,
         model: Model,
-        forAudio: Boolean,
+        forAudio: Boolean = false,
         maxTokensOverride: Int? = null,
     ): Result<String> {
         touchActivity(context)
@@ -240,15 +233,6 @@ object PocketNodeInference {
             )
         }
         guardMemoryBeforeLoad(context, model)
-        if (model.isWhisperStt) {
-            if (model.instance is WhisperEngine) {
-                return Result.success("Whisper (en memoria)")
-            }
-            return runCatching {
-                model.instance = WhisperEngine.load(context, modelFile)
-                "XNNPACK/CPU"
-            }
-        }
         return initializeLlmLocked(
             context = context,
             model = model,
@@ -496,7 +480,7 @@ object PocketNodeInference {
         }
     }
 
-    /** Releases all currently loaded Chat/Audio models from RAM and GPU to conserve battery. */
+    /** Releases all currently loaded LLM models from RAM and GPU to conserve battery. */
     suspend fun releaseAllLoadedModels(): List<String> {
         idleWatchdogJob?.cancel()
         val candidates = listOfNotNull(
@@ -509,12 +493,7 @@ object PocketNodeInference {
         for (model in candidates) {
             modelMutex(model.name).withLock {
                 if (model.instance != null) {
-                    if (model.isWhisperStt) {
-                        runCatching { (model.instance as? WhisperEngine)?.close() }
-                        model.instance = null
-                    } else {
-                        LlmChatModelHelper.cleanUp(model, onDone = {})
-                    }
+                    LlmChatModelHelper.cleanUp(model, onDone = {})
                     released += model.name
                 }
             }

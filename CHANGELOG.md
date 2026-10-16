@@ -4,6 +4,18 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### STT migrado al servicio nativo del móvil (sin Whisper)
+- `AndroidNativeSttEngine.kt`: la transcripción usa `SpeechRecognizer` (on-device preferido), alimentado por pipe con `EXTRA_AUDIO_SOURCE`, así que funciona con la pantalla apagada.
+- `POST /v1/audio/transcriptions` (`PocketNodeServer.kt`):
+  - Campo `file` obligatorio; `model`, `temperature`, `prompt` y `timestamp_granularities` se aceptan y se ignoran.
+  - `response_format`: `json`, `text`, `verbose_json`, `srt`, `vtt`. Segmentos de hasta 25 s.
+  - Errores en formato OpenAI `{"error":{...}}`: 400, 429 (cola llena, máx. 4 pendientes), 503.
+- `TranscriptionFormats.kt`: renderizado SRT/WebVTT y segmentos.
+- `PocketNodeService.kt`: `WifiLock` (`WIFI_MODE_FULL`) mientras el servidor corre, para que el Wi-Fi no duerma con la pantalla apagada.
+- `PocketNodeServerDialog.kt`: pide `RECORD_AUDIO` antes de iniciar el servidor.
+- Modelo `Whisper-Large-V3-Turbo-i4` quitado de `1_0_11.json`. El código `server/whisper/*` queda sin uso y se eliminará en una etapa posterior, tras verificar en dispositivo.
+- Tests nuevos: `AndroidNativeSttEngineTest`, `AudioDecoderHelperTest`, `TranscriptionFormatsTest`.
+
 ### Optimización avanzada de batería en primer y segundo plano (sin perder velocidad en API)
 - `MainActivity.kt`:
   - Elimina `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` fijo que impedía que la pantalla del teléfono se apagara sola.

@@ -19,7 +19,7 @@ data class ApiTestResult(
     val httpCode: Int?,
     val millis: Long,
     val detail: String,
-    /** Model that served the request, or null when the route does not use a model. */
+    /** Model or native service that served the request, or null when the route does not use a model. */
     val model: String? = null,
 )
 
@@ -40,8 +40,6 @@ object PocketNodeApiTester {
     suspend fun runAll(): List<ApiTestResult> = withContext(Dispatchers.IO) {
         val fallbackChatModel = PocketNodeState.activeChatModel?.name
             ?: PocketNodeState.preferredChatModelName.ifBlank { null }
-        val fallbackAudioModel = PocketNodeState.activeAudioModel?.name
-            ?: PocketNodeState.preferredAudioModelName.ifBlank { null }
 
         listOf(
             testRoute("GET /", fallbackModel = null, send = { get("/") }) { reply ->
@@ -56,7 +54,7 @@ object PocketNodeApiTester {
             },
             testRoute(
                 "POST /v1/audio/transcriptions",
-                fallbackModel = fallbackAudioModel,
+                fallbackModel = AndroidNativeSttEngine.ENGINE_MODEL_ID,
                 send = { postAudio() },
             ) { reply ->
                 checkTranscription(reply.code, reply.body, reply.timings)
@@ -176,7 +174,7 @@ object PocketNodeApiTester {
     }
 
     /** One second of 16 kHz mono 16-bit PCM silence wrapped in a WAV header. */
-    private fun silentWav(): ByteArray {
+    internal fun silentWav(): ByteArray {
         val sampleRate = 16_000
         val dataSize = sampleRate * 2
         return ByteBuffer.allocate(44 + dataSize).order(ByteOrder.LITTLE_ENDIAN).apply {

@@ -1,10 +1,13 @@
 package com.google.ai.edge.gallery.server
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -28,8 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.google.ai.edge.gallery.data.Model
-import com.google.ai.edge.gallery.data.ModelDownloadStatusType
-import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -59,30 +60,24 @@ fun PocketNodeServerDialog(
         uiState.tasks.flatMap { it.models }.distinctBy { it.name }
     }
 
-    // STT candidates: LLMs with audio support plus Whisper models, which are not part of any task list.
-    val audioCapableModels = remember(allModels) {
-        allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") } +
-            PocketNodeModelResolver.getAllModels(context).filter { it.isWhisperStt }
-    }
-
     var selectedChatModelName by remember {
         mutableStateOf(PocketNodeState.preferredChatModelName.ifEmpty { PocketNodeState.activeChatModel?.name ?: "" })
-    }
-    var selectedAudioModelName by remember {
-        mutableStateOf(PocketNodeState.preferredAudioModelName.ifEmpty { PocketNodeState.activeAudioModel?.name ?: "" })
     }
     var maxTokensText by remember {
         mutableStateOf(PocketNodeState.configuredMaxTokens.toString())
     }
 
     var chatDropdownExpanded by remember { mutableStateOf(false) }
-    var audioDropdownExpanded by remember { mutableStateOf(false) }
 
     var isInitializing by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
 
     var isTestingApis by remember { mutableStateOf(false) }
     var apiTestResults by remember { mutableStateOf<List<ApiTestResult>>(emptyList()) }
+
+    val nativeSttSummary = remember(context) {
+        AndroidNativeSttEngine.statusSummary(context)
+    }
 
     val exportLogsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain")
@@ -94,15 +89,23 @@ fun PocketNodeServerDialog(
         }
     }
 
+    // The native STT engine needs RECORD_AUDIO even though audio is injected by pipe, not captured.
+    val recordAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        statusMessage = if (granted) {
+            "✅ Permiso de micrófono concedido. Pulse Iniciar de nuevo."
+        } else {
+            "❌ Sin permiso de micrófono el STT nativo no puede funcionar."
+        }
+    }
+
     LaunchedEffect(Unit) {
         PocketNodeState.loadPreferences(context)
         PocketNodeLogger.loadPreferences(context)
         maxTokensText = PocketNodeState.configuredMaxTokens.toString()
         if (selectedChatModelName.isEmpty() && allModels.isNotEmpty()) {
             selectedChatModelName = PocketNodeState.preferredChatModelName.ifEmpty { allModels.first().name }
-        }
-        if (selectedAudioModelName.isEmpty() && audioCapableModels.isNotEmpty()) {
-            selectedAudioModelName = PocketNodeState.preferredAudioModelName.ifEmpty { audioCapableModels.first().name }
         }
     }
 
@@ -170,7 +173,7 @@ fun PocketNodeServerDialog(
                             )
                             if (PocketNodeState.isServerRunning) {
                                 Text(
-                                    text = "http://localhost:${PocketNodeServer.PORT} · ${PocketNodeState.configuredMaxTokens} tokens · hiberna ${PocketNodeState.configuredIdleMinutes}m",
+                                    text = "http://localhost:${PocketNodeServer.PORT} · ${PocketNodeState.configuredMaxTokens} tokens · STT Nativo",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -224,13 +227,9 @@ fun PocketNodeServerDialog(
                                     val matchedModel = allModels.find { it.name == model.name }
                                     if (matchedModel != null) {
                                         PocketNodeState.activeChatModel = matchedModel
-                                        if (matchedModel.llmSupportAudio && selectedAudioModelName.isEmpty()) {
-                                            selectedAudioModelName = model.name
-                                            PocketNodeState.activeAudioModel = matchedModel
-                                        }
                                     }
                                     PocketNodeState.syncSharedModels()
-                                    PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
+                                    PocketNodeState.savePreferences(context, selectedChatModelName)
                                 }
                             )
                         }
@@ -239,72 +238,60 @@ fun PocketNodeServerDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Selector de Modelo para Transcripción (Audio STT)
+                // Native Android STT Service Configuration (no Whisper / zero RAM overhead)
                 Text(
-                    text = "Modelo para Transcripción (Audio STT):",
+                    text = "Transcripción de Audio (STT - OpenAI API):",
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                ExposedDropdownMenuBox(
-                    expanded = audioDropdownExpanded,
-                    onExpandedChange = { audioDropdownExpanded = !audioDropdownExpanded }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
-                    OutlinedTextField(
-                        value = (audioCapableModels.find { it.name == selectedAudioModelName } ?: allModels.find { it.name == selectedAudioModelName })?.name ?: selectedAudioModelName.ifEmpty { "Seleccionar modelo STT" },
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = audioDropdownExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = audioDropdownExpanded,
-                        onDismissRequest = { audioDropdownExpanded = false }
-                    ) {
-                        val displayList = if (audioCapableModels.isNotEmpty()) audioCapableModels else allModels
-                        displayList.forEach { model ->
-                            DropdownMenuItem(
-                                text = { Text(model.name) },
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🎙️ $nativeSttSummary",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Procesamiento 100% mediante el motor nativo del móvil (sin descargar modelos pesados, activo aun con la pantalla apagada).",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = PocketNodeState.preferOfflineNativeStt,
                                 onClick = {
-                                    selectedAudioModelName = model.name
-                                    audioDropdownExpanded = false
-                                    val matchedModel = audioCapableModels.find { it.name == model.name }
-                                    if (matchedModel != null) {
-                                        PocketNodeState.activeAudioModel = matchedModel
-                                    }
-                                    PocketNodeState.syncSharedModels()
-                                    PocketNodeState.savePreferences(context, selectedChatModelName, selectedAudioModelName)
-                                }
+                                    PocketNodeState.savePreferences(
+                                        context = context,
+                                        chatModelName = selectedChatModelName,
+                                        preferOfflineStt = true,
+                                    )
+                                    statusMessage = "✅ STT configurado en modo On-Device / Offline preferido."
+                                },
+                                label = { Text("Priorizar Offline (On-Device)", fontSize = 11.sp) },
                             )
-                        }
-                    }
-                }
-
-                // Whisper STT model: download status and progress (it is not listed in the Gallery tasks)
-                val sttModel = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }
-                if (sttModel != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    val downloadStatus = uiState.modelDownloadStatus[sttModel.name]
-                    if (downloadStatus?.status == ModelDownloadStatusType.IN_PROGRESS) {
-                        val progress = downloadStatus?.let {
-                            if (it.totalBytes > 0) it.receivedBytes.toFloat() / it.totalBytes else 0f
-                        } ?: 0f
-                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-                    } else {
-                        val downloaded = sttModel.isDownloaded(context)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = if (downloaded) "✅ Modelo STT descargado" else "⚠️ Modelo STT no descargado",
-                                fontSize = 12.sp,
-                                modifier = Modifier.weight(1f)
+                            FilterChip(
+                                selected = !PocketNodeState.preferOfflineNativeStt,
+                                onClick = {
+                                    PocketNodeState.savePreferences(
+                                        context = context,
+                                        chatModelName = selectedChatModelName,
+                                        preferOfflineStt = false,
+                                    )
+                                    statusMessage = "✅ STT configurado en modo Estándar del Sistema."
+                                },
+                                label = { Text("Estándar Sistema", fontSize = 11.sp) },
                             )
-                            if (!downloaded) {
-                                TextButton(onClick = { modelManagerViewModel.downloadModel(task = null, model = sttModel) }) {
-                                    Text("Descargar")
-                                }
-                            }
                         }
                     }
                 }
@@ -327,7 +314,6 @@ fun PocketNodeServerDialog(
                             PocketNodeState.savePreferences(
                                 context = context,
                                 chatModelName = selectedChatModelName,
-                                audioModelName = selectedAudioModelName,
                                 maxTokens = parsed,
                             )
                         }
@@ -355,7 +341,6 @@ fun PocketNodeServerDialog(
                                 PocketNodeState.savePreferences(
                                     context = context,
                                     chatModelName = selectedChatModelName,
-                                    audioModelName = selectedAudioModelName,
                                     maxTokens = preset,
                                 )
                                 statusMessage = "✅ Límite ajustado a $preset tokens."
@@ -385,7 +370,6 @@ fun PocketNodeServerDialog(
                                 PocketNodeState.savePreferences(
                                     context = context,
                                     chatModelName = selectedChatModelName,
-                                    audioModelName = selectedAudioModelName,
                                     idleMinutes = mins,
                                 )
                                 PocketNodeInference.touchActivity(context)
@@ -407,15 +391,10 @@ fun PocketNodeServerDialog(
                         if (matchedChat != null) {
                             PocketNodeState.activeChatModel = matchedChat
                         }
-                        val matchedAudio = audioCapableModels.find { it.name == selectedAudioModelName }
-                        if (matchedAudio != null) {
-                            PocketNodeState.activeAudioModel = matchedAudio
-                        }
                         PocketNodeState.syncSharedModels()
                         PocketNodeState.savePreferences(
                             context = context,
                             chatModelName = selectedChatModelName,
-                            audioModelName = selectedAudioModelName,
                             maxTokens = parsedTokens,
                         )
                         maxTokensText = PocketNodeState.configuredMaxTokens.toString()
@@ -424,28 +403,26 @@ fun PocketNodeServerDialog(
                         if (PocketNodeState.isServerRunning) {
                             context.stopService(intent)
                         } else {
-                            val chatModel = PocketNodeState.activeChatModel?.takeUnless { it.isWhisperStt }
-                            val audioModel = PocketNodeState.activeAudioModel
-                            val sharedAudio = chatModel != null && audioModel != null && chatModel.name == audioModel.name
+                            val chatModel = PocketNodeState.activeChatModel
+
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                return@Button
+                            }
 
                             if (chatModel != null && !chatModel.isDownloaded(context)) {
                                 statusMessage = "⚠️ El modelo Chat '${chatModel.name}' aún no se ha descargado en el dispositivo."
                                 return@Button
                             }
-                            if (audioModel != null && !audioModel.isDownloaded(context)) {
-                                statusMessage = "⚠️ Descarga el modelo STT '${audioModel.name}' antes de iniciar el servidor."
-                                return@Button
-                            }
 
                             isInitializing = true
-                            statusMessage = "⏳ Cargando modelos en memoria (GPU / Español / ${PocketNodeState.configuredMaxTokens} tokens)..."
+                            statusMessage = "⏳ Cargando modelo Chat en memoria (GPU / Español / ${PocketNodeState.configuredMaxTokens} tokens)..."
 
                             scope.launch {
                                 val loadedSummary = mutableListOf<String>()
                                 if (chatModel != null) {
-                                    statusMessage = "⏳ Cargando modelo Chat '${chatModel.name}' en memoria..."
                                     val chatRes = withContext(Dispatchers.IO) {
-                                        PocketNodeInference.preloadModel(context, chatModel, forAudio = sharedAudio)
+                                        PocketNodeInference.preloadModel(context, chatModel, forAudio = false)
                                     }
                                     chatRes.onSuccess { backend ->
                                         loadedSummary += "${chatModel.name} ($backend)"
@@ -455,28 +432,10 @@ fun PocketNodeServerDialog(
                                         return@launch
                                     }
                                 }
-
-                                val canPreloadBoth = chatModel == null || PocketNodeInference.hasEnoughRamForDualResidency(context)
-                                if (audioModel != null && !sharedAudio && canPreloadBoth) {
-                                    statusMessage = "⏳ Cargando modelo STT '${audioModel.name}' en memoria..."
-                                    val audioRes = withContext(Dispatchers.IO) {
-                                        PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
-                                    }
-                                    audioRes.onSuccess { backend ->
-                                        loadedSummary += "${audioModel.name} ($backend)"
-                                    }.onFailure { e ->
-                                        isInitializing = false
-                                        statusMessage = "❌ Error cargando modelo STT: ${e.message}"
-                                        return@launch
-                                    }
-                                }
+                                loadedSummary += AndroidNativeSttEngine.ENGINE_MODEL_ID
 
                                 isInitializing = false
-                                statusMessage = if (loadedSummary.isNotEmpty()) {
-                                    "✅ Modelos en memoria (${PocketNodeState.configuredMaxTokens} tokens): ${loadedSummary.joinToString(", ")}"
-                                } else {
-                                    "✅ Servidor iniciado."
-                                }
+                                statusMessage = "✅ Listo (${PocketNodeState.configuredMaxTokens} tokens): ${loadedSummary.joinToString(", ")}"
                                 try {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                         context.startForegroundService(intent)
@@ -680,7 +639,7 @@ fun PocketNodeServerDialog(
                         enabled = PocketNodeLogger.entries.isNotEmpty(),
                         onClick = {
                             PocketNodeLogger.clear(context)
-                            statusMessage = "🧹 Log de operaciones limpiado."
+                            statusMessage = "🧹 Log limpiado."
                         },
                     ) {
                         Text("Limpiar", fontSize = 12.sp)

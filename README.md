@@ -33,14 +33,14 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
     *   Audio transcriptions (`/v1/audio/transcriptions` and `WhisperEngine`) default to Spanish (`language=es`) when no language parameter is provided, skipping the extra language-detection decoder pass in Whisper.
 *   **Interactive Model Configuration UI**: Select your desired active models directly in the app before starting the HTTP server:
     *   **Chat / Completions Model**: Dedicated model selector for text generation.
-    *   **Audio STT Model**: Dedicated model selector for speech-to-text (e.g. `Whisper-Large-V3-Turbo`).
+    *   **Native STT Service**: Speech-to-text uses the phone's own `SpeechRecognizer` (on-device preferred), with no extra model to download.
     *   **Persistent Preferences**: Model choices, token budget, and idle hibernation timeout are saved in `SharedPreferences` and automatically initialized when starting `PocketNodeService`.
 *   **API Operation Logging, Export & Share**:
     *   Real-time operation log (`PocketNodeLogger`) capturing timestamps, routes, HTTP status codes, latency (`ms`), serving model name, and payload/timing details.
     *   Toggle logging on/off, view recent requests live in **Pocket Node Server**, **Export** logs to a `.log` file (`CreateDocument`), or **Share** logs directly with other apps (Email, WhatsApp, Telegram, Drive) via `FileProvider`.
 *   **Local Allowlist Asset Bundling**: Bundles `assets/model_allowlists/1_0_11.json` inside the APK assets. Models defined in local allowlists (like Whisper-Large-V3-Turbo) load instantly in the app's download manager without depending on internet GitHub raw files.
 *   **OpenAI-Compatible Schema**: Designed to cleanly integrate with your existing scripts, Python backends, and low-code wrappers (like `n8n`) using standard JSON / Multipart schemas.
-*   **Speech-to-Text (STT) & Whisper Support**: Optimized for `litert-community/whisper-large-v3-turbo` (`whisper_large_v3_turbo_30s_i4.tflite`) and multimodal LiteRT-LM models (e.g., Gemma 3n / Gemma 4), supporting accurate Spanish (`language=es`) and multilingual audio transcription.
+*   **Speech-to-Text (STT) via Native Service**: Transcription runs on the Android `SpeechRecognizer` and is served through an OpenAI-compatible `/v1/audio/transcriptions` endpoint, including with the screen off. Defaults to Spanish (`language=es`).
 *   **Dual Active Model Management**: `PocketNodeState` manages `activeChatModel` and `activeAudioModel` independently.
 *   **Zero Cloud, Zero Cost**: 100% on-device inference using your Android's NPU/GPU/CPU. Completely offline and private.
 
@@ -49,7 +49,7 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
 ## 🏁 Get Started in Minutes
 
 1. **Clone & Build**: Clone this repository and build the APK using Android Studio or Gradle CLI.
-2. **Download Models**: Open the app and download your preferred models (e.g. Gemma 4 for Chat, `Whisper-Large-V3-Turbo` for Speech-to-Text).
+2. **Download Models**: Open the app and download your preferred chat model (e.g. Gemma 4). Speech-to-Text needs no model download.
 3. **Configure & Start Server**: Open the left-side navigation drawer, tap **Pocket Node Server** to open the server dialog:
    - Choose your **Chat / Completions Model**.
    - Choose your **Audio STT Model**.
@@ -75,7 +75,7 @@ Instead of burning your PC's GPU power or paying for external cloud APIs, you ca
      curl http://<YOUR_PHONE_IP>:8080/v1/audio/transcriptions \
        -H "Content-Type: multipart/form-data" \
        -F "file=@audio_espanol.mp3" \
-       -F "model=whisper-large-v3-turbo" \
+       -F "model=android-native-stt" \
        -F "language=es" \
        -F "response_format=json"
      ```
@@ -121,19 +121,27 @@ Run the unit tests with `./gradlew testDebugUnitTest`.
 
 ---
 
-## 🎙️ Whisper STT (Speech-to-Text)
+## 🎙️ Speech-to-Text con el servicio nativo del móvil
 
-Pocket Node can transcribe audio with **Whisper large-v3-turbo** (`litert-community/whisper-large-v3-turbo`, int4 variant, ~720 MiB). It is not a chat model. It runs through its own LiteRT engine in `server/whisper/`, not through LiteRT-LM.
+La transcripción la hace **íntegramente el reconocedor de voz nativo de Android** (`SpeechRecognizer`, preferentemente on-device). No hay modelos de STT que descargar ni se usa Whisper. El audio subido se decodifica a PCM 16 kHz mono y se entrega al reconocedor por pipe (`EXTRA_AUDIO_SOURCE`), así que funciona con la pantalla apagada.
 
-1. Open **Pocket Node Server** in the app and pick **Whisper-Large-V3-Turbo-i4** in *Modelo para Transcripción (Audio STT)*.
-2. If the model is not on the device, tap **Descargar**. The server button stays disabled until the download finishes.
-3. Start the server, then transcribe:
+Requisitos:
+- Android 13 (API 33) o superior.
+- Permiso de micrófono (`RECORD_AUDIO`). El diálogo lo pide antes de iniciar el servidor.
+- Para uso sin conexión, instalar el paquete de voz offline del idioma en los ajustes de voz de Android/Google.
+
+1. Open **Pocket Node Server** in the app and start the server. Elige en *Servicio STT* si prefieres solo on-device o el motor del sistema.
+2. Transcribe:
    ```bash
    curl http://YOUR_PHONE_IP:8080/v1/audio/transcriptions \
      -F "file=@audio.m4a" \
-     -F "language=es"
+     -F "language=es" \
+     -F "response_format=verbose_json"
    ```
-   `language` defaults to `"es"` (Spanish). Pass `language=auto` if you want automatic language detection, or another ISO code (e.g., `en`, `pt`, `fr`).
+   Campos: `file` (obligatorio), `language` (`es` por defecto; ISO o BCP-47, p. ej. `en`, `pt-BR`). `model`, `temperature`, `prompt` y `timestamp_granularities` se aceptan pero se ignoran.
+   Formatos de `response_format`: `json` (por defecto), `text`, `verbose_json`, `srt`, `vtt`. En `verbose_json`/`srt`/`vtt` los segmentos son ventanas de hasta 25 s, sin confianza ni tiempos por palabra (el reconocedor nativo no los expone).
+   Errores en formato OpenAI `{"error":{"message","type"}}`: `400` entrada inválida, `429` cola llena, `503` reconocedor no disponible (p. ej. falta el paquete de idioma).
+   `language=auto` no detecta el idioma: usa español.
 
 ---
 
@@ -142,7 +150,7 @@ Pocket Node can transcribe audio with **Whisper large-v3-turbo** (`litert-commun
 Open **Pocket Node Server** and tap **Probar todas las rutas** while the server is running. The app calls `127.0.0.1:8080` directly and checks:
 - `GET /` returns HTTP 200 and `Pocket Node AI is running!`.
 - `POST /v1/chat/completions` returns HTTP 200 and a non-empty `choices[0].message.content` without error markers, showing the serving model name (`Modelo: <name>`).
-- `POST /v1/audio/transcriptions` (with 1 s of 16 kHz mono WAV silence) returns HTTP 200 and a JSON `text` field without error markers, showing the serving model name and Whisper timing breakdown.
+- `POST /v1/audio/transcriptions` (with 1 s of 16 kHz mono WAV silence) returns HTTP 200 and a JSON `text` field without error markers, showing the serving model name and the STT timing breakdown.
 
 ---
 
