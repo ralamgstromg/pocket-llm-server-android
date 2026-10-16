@@ -35,6 +35,7 @@ data class PromptTemplate(val title: String, val description: String, val prompt
 enum class RuntimeType {
   @SerializedName("unknown") UNKNOWN,
   @SerializedName("litert_lm") LITERT_LM,
+  @SerializedName("tflite_whisper") TFLITE_WHISPER,
 }
 
 /**

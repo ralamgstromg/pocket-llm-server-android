@@ -44,29 +44,46 @@ object PocketNodeModelResolver {
     }
 
     private fun readAllowlist(context: Context): ModelAllowlist? {
-        val gson = Gson()
-        // 1. Try local disk allowlist first
+        val disk = readDiskAllowlist(context)
+        val asset = readAssetAllowlist(context)
+        return when {
+            disk == null -> asset
+            asset == null -> disk
+            else -> mergeAllowlists(primary = disk, fallback = asset)
+        }
+    }
+
+    /**
+     * The disk copy can be an older allowlist written by the Gallery, so models that only exist in
+     * the bundled asset (for example Whisper) are added to it instead of being hidden.
+     */
+    internal fun mergeAllowlists(primary: ModelAllowlist, fallback: ModelAllowlist): ModelAllowlist {
+        val names = primary.models.map { it.name }.toSet()
+        return ModelAllowlist(models = primary.models + fallback.models.filter { it.name !in names })
+    }
+
+    private fun readDiskAllowlist(context: Context): ModelAllowlist? {
         try {
             val diskFile = File(context.getExternalFilesDir(null), "model_allowlist.json")
             if (diskFile.exists()) {
-                val json = diskFile.readText()
-                val list = gson.fromJson(json, ModelAllowlist::class.java)
+                val list = Gson().fromJson(diskFile.readText(), ModelAllowlist::class.java)
                 if (list?.models?.isNotEmpty() == true) return list
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed reading allowlist from disk: ${e.message}")
         }
+        return null
+    }
 
-        // 2. Fallback to bundled asset
+    private fun readAssetAllowlist(context: Context): ModelAllowlist? {
         try {
             val version = BuildConfig.VERSION_NAME.replace(".", "_")
             val assetPath = "model_allowlists/$version.json"
             val json = context.assets.open(assetPath).bufferedReader().use { it.readText() }
-            return gson.fromJson(json, ModelAllowlist::class.java)
+            return Gson().fromJson(json, ModelAllowlist::class.java)
         } catch (e: Exception) {
             Log.e(TAG, "Failed reading allowlist from assets: ${e.message}")
         }
-
         return null
     }
 }

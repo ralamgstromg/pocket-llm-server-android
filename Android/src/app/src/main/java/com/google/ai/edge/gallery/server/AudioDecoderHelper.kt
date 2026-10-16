@@ -168,6 +168,40 @@ object AudioDecoderHelper {
         }
     }
 
+    /**
+     * Decodes any supported audio into 16 kHz mono float samples in [-1, 1].
+     * Returns null when the audio cannot be decoded to that format.
+     */
+    fun decodeToMono16kSamples(context: Context, audioBytes: ByteArray): FloatArray? {
+        return wavToFloatSamples(decodeToMonoPcmWav(context, audioBytes))
+    }
+
+    private fun wavToFloatSamples(wav: ByteArray): FloatArray? {
+        if (wav.size < 12 || String(wav, 0, 4) != "RIFF" || String(wav, 8, 4) != "WAVE") return null
+        val buffer = ByteBuffer.wrap(wav).order(ByteOrder.LITTLE_ENDIAN)
+        var pos = 12
+        var formatOk = false
+        while (pos + 8 <= wav.size) {
+            val chunkId = String(wav, pos, 4)
+            val chunkSize = buffer.getInt(pos + 4)
+            when (chunkId) {
+                "fmt " -> {
+                    val channels = buffer.getShort(pos + 10).toInt()
+                    val sampleRate = buffer.getInt(pos + 12)
+                    val bits = buffer.getShort(pos + 22).toInt()
+                    formatOk = channels == 1 && sampleRate == TARGET_SAMPLE_RATE && bits == 16
+                }
+                "data" -> {
+                    if (!formatOk) return null
+                    val available = minOf(chunkSize, wav.size - pos - 8) / 2
+                    return FloatArray(available) { buffer.getShort(pos + 8 + it * 2) / 32768f }
+                }
+            }
+            pos += 8 + chunkSize + (chunkSize and 1)
+        }
+        return null
+    }
+
     private fun is16kHzMonoWav(bytes: ByteArray): Boolean {
         if (bytes.size < 44) return false
         val riff = String(bytes, 0, 4)

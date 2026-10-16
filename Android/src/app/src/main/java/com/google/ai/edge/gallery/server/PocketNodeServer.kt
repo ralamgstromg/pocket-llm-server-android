@@ -2,6 +2,8 @@ package com.google.ai.edge.gallery.server
 
 import android.content.Context
 import android.util.Log
+import com.google.ai.edge.gallery.server.whisper.WhisperEngine
+import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.llmchat.LlmChatModelHelper
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -22,6 +24,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -43,6 +46,10 @@ data class Choice(val message: Message)
 data class TranscriptionResponse(val text: String)
 
 class PocketNodeServer {
+    companion object {
+        const val PORT = 8080
+    }
+
     private var server: EmbeddedServer<*, *>? = null
     private val serverMutexMap = ConcurrentHashMap<String, Mutex>()
 
@@ -53,7 +60,7 @@ class PocketNodeServer {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val newServer = embeddedServer(CIO, port = 8080) {
+                val newServer = embeddedServer(CIO, port = PORT) {
                     install(CORS) {
                         anyHost() // Allow connections from n8n or any local network client
                         allowHeader(io.ktor.http.HttpHeaders.ContentType)
@@ -131,25 +138,34 @@ class PocketNodeServer {
                                 return@post
                             }
 
-                            // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
-                            val processedAudioBytes = if (context != null) {
-                                AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+                            val cleanText = if (audioModel.isWhisperStt) {
+                                val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
+                                if (samples == null) {
+                                    call.respondText("Error: audio no decodificable a 16 kHz mono.", status = HttpStatusCode.BadRequest)
+                                    return@post
+                                }
+                                transcribeWithWhisper(audioModel, samples, languageParam)
                             } else {
-                                rawAudioBytes!!
-                            }
+                                // Decode audio file (MP3, M4A, AAC, OGG, FLAC, WAV) to 16kHz Mono 16-bit PCM WAV
+                                val processedAudioBytes = if (context != null) {
+                                    AudioDecoderHelper.decodeToMonoPcmWav(context, rawAudioBytes!!)
+                                } else {
+                                    rawAudioBytes!!
+                                }
 
-                            val prompt = when {
-                                !promptParam.isNullOrBlank() -> promptParam!!
-                                languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
-                                    "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
-                                !languageParam.isNullOrBlank() ->
-                                    "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
-                                else ->
-                                    "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
-                            }
+                                val prompt = when {
+                                    !promptParam.isNullOrBlank() -> promptParam!!
+                                    languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
+                                        "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
+                                    !languageParam.isNullOrBlank() ->
+                                        "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
+                                    else ->
+                                        "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
+                                }
 
-                            val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
-                            val cleanText = sanitizeSpokenText(fullResponse)
+                                val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
+                                sanitizeSpokenText(fullResponse)
+                            }
                             if (responseFormatParam.equals("text", ignoreCase = true)) {
                                 call.respondText(cleanText, ContentType.Text.Plain)
                             } else {
@@ -166,11 +182,23 @@ class PocketNodeServer {
         } catch (e: Exception) {
             Log.e("PocketNodeServer", "Failed to start Ktor HTTP server", e)
             PocketNodeState.isServerRunning = false
-            PocketNodeState.lastStartupError = "Error al iniciar servidor (puerto 8080 en uso o error de red): ${e.message}"
+            PocketNodeState.lastStartupError = "Error al iniciar servidor (puerto $PORT en uso o error de red): ${e.message}"
             server = null
         }
+        }
+        context?.let { warmUpWhisper(it) }
     }
-}
+
+    /** Loads the Whisper STT model in the background so the first transcription does not pay the load time. */
+    private fun warmUpWhisper(context: Context) {
+        val model = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt } ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            serverMutexMap.getOrPut(model.name) { Mutex() }.withLock {
+                val (_, err) = resolveAndInitModel("", context, isAudio = true)
+                if (err != null) Log.w("PocketNodeServer", "Whisper warm-up skipped: $err")
+            }
+        }
+    }
 
     private suspend fun resolveAndInitModel(
         reqModelName: String,
@@ -189,15 +217,18 @@ class PocketNodeServer {
                 PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel ?: PocketNodeState.activeModel
             }
         }
+        // Whisper is speech-to-text only; it must never serve as the chat model.
+        if (!isAudio && model?.isWhisperStt == true) model = null
 
         if (model == null && context != null) {
             val allModels = PocketNodeModelResolver.getAllModels(context)
             if (isAudio) {
-                val audioCapable = allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") }
+                val audioCapable = allModels.filter { it.llmSupportAudio || it.bestForTaskIds.contains("llm_ask_audio") || it.isWhisperStt }
                 model = audioCapable.find { java.io.File(it.getPath(context)).exists() } ?: audioCapable.firstOrNull() ?: allModels.firstOrNull()
                 if (model != null) PocketNodeState.activeAudioModel = model
             } else {
-                model = allModels.find { java.io.File(it.getPath(context)).exists() } ?: allModels.firstOrNull()
+                val chatModels = allModels.filterNot { it.isWhisperStt }
+                model = chatModels.find { java.io.File(it.getPath(context)).exists() } ?: chatModels.firstOrNull()
                 if (model != null) PocketNodeState.activeChatModel = model
             }
         }
@@ -212,22 +243,18 @@ class PocketNodeServer {
                 return Pair(null, "Error: Model file '${model.name}' (${model.downloadFileName}) is not downloaded on device yet. Please download it in the Gallery App first.")
             }
 
-            var initError: String? = null
-            suspendCoroutine { continuation ->
-                LlmChatModelHelper.initialize(
-                    context = context,
-                    model = model,
-                    supportImage = model.llmSupportImage,
-                    supportAudio = model.llmSupportAudio,
-                    onDone = { errorMsg ->
-                        if (errorMsg.isNotEmpty()) initError = errorMsg
-                        continuation.resume(Unit)
-                    }
-                )
+            if (model.isWhisperStt) {
+                model.instance = try {
+                    WhisperEngine.load(context, modelFile)
+                } catch (e: Exception) {
+                    Log.e("PocketNodeServer", "Failed to load Whisper model ${model.name}", e)
+                    return Pair(null, "Error cargando Whisper '${model.name}': ${e.message}")
+                }
+                return Pair(model, null)
             }
 
-            if (initError != null || model.instance == null) {
-                return Pair(null, "Error initializing model '${model.name}': ${initError ?: "Failed to load model into RAM"}")
+            PocketNodeInference.initializeLlm(context, model).onFailure { e ->
+                return Pair(null, "Error initializing model '${model.name}': ${e.message}")
             }
         }
 
@@ -278,10 +305,26 @@ class PocketNodeServer {
         return fullResponse
     }
 
+    private suspend fun transcribeWithWhisper(
+        model: com.google.ai.edge.gallery.data.Model,
+        samples: FloatArray,
+        language: String?,
+    ): String {
+        val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
+        return mutex.withLock {
+            withContext(Dispatchers.IO) { (model.instance as WhisperEngine).transcribe(samples, language) }
+        }
+    }
+
     fun stop() {
         PocketNodeState.isServerRunning = false
         server?.stop(1000, 2000, TimeUnit.MILLISECONDS)
         server = null
+        // Release the Whisper weights (hundreds of MB) while the server is down.
+        PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }?.let { model ->
+            (model.instance as? WhisperEngine)?.close()
+            model.instance = null
+        }
     }
 
     private fun sanitizeSpokenText(rawInput: String): String {
