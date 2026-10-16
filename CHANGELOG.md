@@ -4,6 +4,22 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Precarga en memoria, GPU por defecto, optimización de latencia y español por defecto
+- `server/PocketNodeInference.kt`:
+  - Nuevo `preloadModel(context, model, forAudio)` que carga en memoria tanto modelos LLM como Whisper apenas se habilita la API.
+  - `preferredAccelerator` y `applyFastServingConfig`: activa `GPU` por defecto si el modelo lo soporta, desactiva el modo `thinking` (`ENABLE_THINKING = false`), reduce `topK` a `16`, `topP` a `0.85`, `temperature` a `0.4` y `maxTokens` a `1024`, y evita cargar el codificador de visión en el servidor API (`supportImage = false`).
+  - Configura español por defecto (`DEFAULT_LANGUAGE = "es"` y `DEFAULT_SPANISH_SYSTEM_PROMPT`) en la inicialización y en `resetConversationForApi`.
+- `server/PocketNodeServer.kt` y `server/PocketNodeServerDialog.kt`:
+  - Precargan tanto `activeChatModel` como `activeAudioModel` (incluyendo Whisper) apenas se inicia el servidor, registrando el evento `SERVER preload` en `PocketNodeLogger`.
+  - Reinician la conversación en cada petición HTTP stateless para evitar acumulación en el KV-cache.
+  - Usan `"es"` como idioma por defecto en `/v1/audio/transcriptions`.
+- `data/Config.kt`, `data/ModelAllowlist.kt` y `server/PocketNodeModelResolver.kt`:
+  - Priorizan `Accelerator.GPU` como valor por defecto en `ConfigKeys.ACCELERATOR` y actualizan entradas antiguas en disco sin GPU cuando el asset empaquetado soporta GPU.
+- `ui/llmchat/LlmChatModelHelper.kt`:
+  - Activa siempre `cacheDir = context.cacheDir.absolutePath` en `EngineConfig` para persistir la compilación de shaders de GPU.
+- `server/whisper/WhisperEngine.kt`:
+  - Usa español (`"es"`) por defecto en `resolveLanguageCode` (ahorrando el paso extra del decodificador en `detectLanguage()`), activa `setUseXNNPACK(true)` y ajusta hilos dinámicamente (`4..8`).
+
 ### Log de operaciones de la API con exportación y uso compartido
 - `server/PocketNodeLogger.kt`: registro en tiempo real de todas las operaciones del servidor (`start`, `stop`, `GET /`, `POST /v1/chat/completions`, `POST /v1/audio/transcriptions`) con marca de tiempo, código HTTP, latencia (`ms`), modelo utilizado y detalle de la operación o error.
 - Persistencia en `cacheDir/logs/pocket_node_api.log` y buffer en memoria (hasta 500 entradas), con interruptor activo/inactivo guardado en `SharedPreferences`.

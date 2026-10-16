@@ -1,6 +1,7 @@
 package com.google.ai.edge.gallery.server.whisper
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WhisperDecodeBudgetTest {
@@ -19,5 +20,14 @@ class WhisperDecodeBudgetTest {
     @Test
     fun maxNewTokens_isCappedByDecoderLength() {
         assertEquals(124, WhisperEngine.maxNewTokens(480000)) // 30 s window hits MAX_LEN - PROMPT_LENGTH
+    }
+
+    @Test
+    fun resolveLanguageCode_defaultsToSpanish() {
+        assertEquals("es", WhisperEngine.resolveLanguageCode(null))
+        assertEquals("es", WhisperEngine.resolveLanguageCode(""))
+        assertEquals("es", WhisperEngine.resolveLanguageCode("spanish"))
+        assertEquals("en", WhisperEngine.resolveLanguageCode("en"))
+        assertNull(WhisperEngine.resolveLanguageCode("auto"))
     }
 }

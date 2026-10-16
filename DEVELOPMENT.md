@@ -17,17 +17,17 @@ Run `scripts/build-apk.sh` from the repo root. It installs JDK 21 and the Androi
 ## Server Architecture (`com.google.ai.edge.gallery.server`)
 
 - **`PocketNodeService`**: Foreground service keeping the Ktor server alive and preloading selected chat/audio models on start.
-- **`PocketNodeServer`**: Embedded Ktor CIO server on port `8080` exposing `GET /`, `POST /v1/chat/completions`, and `POST /v1/audio/transcriptions`. Emits `X-Model-Name` and `X-Whisper-Timings` diagnostic headers and logs every operation to `PocketNodeLogger`.
+- **`PocketNodeServer`**: Embedded Ktor CIO server on port `8080` exposing `GET /`, `POST /v1/chat/completions`, and `POST /v1/audio/transcriptions`. Preloads both active models immediately via `preloadActiveModels`, resets conversation state per stateless HTTP request, defaults to Spanish (`es`), emits `X-Model-Name` and `X-Whisper-Timings` diagnostic headers, and logs every operation to `PocketNodeLogger`.
 - **`PocketNodeLogger`**: Ring-buffered (500 entries) and disk-backed (`cacheDir/logs/pocket_node_api.log`) API operation logger supporting enable/disable toggle, `FileProvider` sharing (`shareLogs`), and SAF document export (`exportToUri`).
 - **`PocketNodeState`**: Singleton state & `SharedPreferences` manager isolating `activeChatModel` and `activeAudioModel` (`RuntimeType.TFLITE_WHISPER` is never assigned to chat).
-- **`PocketNodeInference`**: Unified LiteRT-LM loader (`ensureLoaded`) with GPU-first initialization and automatic CPU fallback.
-- **`PocketNodeModelResolver`**: Merges local disk `model_allowlist.json` with bundled `assets/model_allowlists/1_0_11.json`.
+- **`PocketNodeInference`**: Unified model loader (`preloadModel`, `initializeLlm`) with GPU-first initialization (`preferredAccelerator`), low-latency serving config (`applyFastServingConfig`: `ENABLE_THINKING=false`, `topK=16`, `topP=0.85`, `temperature=0.4`, `maxTokens=1024`, vision encoder disabled for API), and default Spanish system instruction (`DEFAULT_SPANISH_SYSTEM_PROMPT`).
+- **`PocketNodeModelResolver`**: Merges local disk `model_allowlist.json` with bundled `assets/model_allowlists/1_0_11.json` and upgrades stale CPU-only disk entries to GPU when the bundled asset supports GPU.
 - **`PocketNodeApiTester` & `PocketNodeServerDialog`**: Self-test runner against `127.0.0.1:8080` and Compose configuration/diagnostics/logs UI.
-- **`whisper/` (`WhisperEngine`, `WhisperFeatureExtractor`, `WhisperTokenizer`)**: On-device LiteRT 2.1.0 (`tflite_whisper`) pipeline for `Whisper-Large-V3-Turbo-i4` with 128-mel Slaney spectrogram extraction and BPE decoding.
+- **`whisper/` (`WhisperEngine`, `WhisperFeatureExtractor`, `WhisperTokenizer`)**: On-device LiteRT 2.1.0 (`tflite_whisper`) pipeline for `Whisper-Large-V3-Turbo-i4` with 128-mel Slaney spectrogram extraction, BPE decoding, XNNPACK acceleration, and Spanish (`es`) default language.
 
 ## Testing, Code Indexing & Security Verification
 
-- **Unit Tests**: Run `JAVA_HOME=/path/to/jdk-21 ./gradlew testDebugUnitTest` inside `Android/src` (covers `PocketNodeApiTesterTest`, `PocketNodeLoggerTest`, `WhisperFeatureExtractorTest`, `WhisperTokenizerTest`).
+- **Unit Tests**: Run `JAVA_HOME=/path/to/jdk-21 ./gradlew testDebugUnitTest` inside `Android/src` (covers `PocketNodeApiTesterTest`, `PocketNodeLoggerTest`, `PocketNodeModelResolverTest`, `WhisperDecodeBudgetTest`, `WhisperFeatureExtractorTest`, `WhisperTokenizerTest`).
 - **CodeGraph**: Run `codegraph sync` at the start and end of tasks to keep `.codegraph/` synchronized.
 - **Graphify**: Run `graphify extract . --code-only` and `graphify cluster-only .` to update `graphify-out/` artifacts.
 - **Security Scan**: Run `trivy fs --scanners vuln,secret,misconfig .` to verify zero leaked secrets or misconfigurations.

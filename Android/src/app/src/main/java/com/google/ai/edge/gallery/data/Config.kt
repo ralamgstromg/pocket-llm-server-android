@@ -239,6 +239,9 @@ fun createLlmChatConfigs(
         valueType = ValueType.INT,
       )
   }
+  val defaultAccelerator =
+    if (accelerators.contains(Accelerator.GPU)) Accelerator.GPU
+    else accelerators.firstOrNull() ?: Accelerator.CPU
   val configs =
     listOf(
         maxTokensConfig,
@@ -265,7 +268,7 @@ fun createLlmChatConfigs(
         ),
         SegmentedButtonConfig(
           key = ConfigKeys.ACCELERATOR,
-          defaultValue = accelerators[0].label,
+          defaultValue = defaultAccelerator.label,
           options = accelerators.map { it.label },
         ),
       )

@@ -29,7 +29,9 @@ import com.google.ai.edge.gallery.data.Model
 import com.google.ai.edge.gallery.data.ModelDownloadStatusType
 import com.google.ai.edge.gallery.server.whisper.isWhisperStt
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private fun Model.isDownloaded(context: Context): Boolean {
@@ -319,42 +321,58 @@ fun PocketNodeServerDialog(
                         if (PocketNodeState.isServerRunning) {
                             context.stopService(intent)
                         } else {
-                            val pendingStt = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt }
-                            if (pendingStt != null && !pendingStt.isDownloaded(context)) {
-                                statusMessage = "⚠️ Descarga el modelo STT '${pendingStt.name}' antes de iniciar el servidor."
+                            val chatModel = PocketNodeState.activeChatModel?.takeUnless { it.isWhisperStt }
+                            val audioModel = PocketNodeState.activeAudioModel
+                            val sharedAudio = chatModel != null && audioModel != null && chatModel.name == audioModel.name
+
+                            if (chatModel != null && !chatModel.isDownloaded(context)) {
+                                statusMessage = "⚠️ El modelo Chat '${chatModel.name}' aún no se ha descargado en el dispositivo."
                                 return@Button
                             }
-                            // Whisper loads lazily on the first transcription request, so only the chat model is preloaded here.
-                            val targetModel = PocketNodeState.activeChatModel ?: PocketNodeState.activeAudioModel?.takeUnless { it.isWhisperStt }
-                            if (targetModel != null && targetModel.instance == null) {
-                                val modelFile = File(targetModel.getPath(context))
-                                if (!modelFile.exists() || modelFile.length() == 0L) {
-                                    statusMessage = "⚠️ El modelo '${targetModel.name}' aún no se ha descargado en el dispositivo."
-                                    return@Button
-                                }
+                            if (audioModel != null && !audioModel.isDownloaded(context)) {
+                                statusMessage = "⚠️ Descarga el modelo STT '${audioModel.name}' antes de iniciar el servidor."
+                                return@Button
+                            }
 
-                                isInitializing = true
-                                statusMessage = "⏳ Cargando modelo '${targetModel.name}' en memoria RAM/NPU..."
+                            isInitializing = true
+                            statusMessage = "⏳ Cargando modelos en memoria (GPU / Español)..."
 
-                                scope.launch {
-                                    val result = PocketNodeInference.initializeLlm(context, targetModel)
-                                    isInitializing = false
-                                    result.onSuccess { backend ->
-                                        statusMessage = "✅ Modelo cargado en ${backend.label}."
-                                        try {
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                context.startForegroundService(intent)
-                                            } else {
-                                                context.startService(intent)
-                                            }
-                                        } catch (e: Exception) {
-                                            statusMessage = "❌ Error iniciando servicio de servidor: ${e.message}"
-                                        }
+                            scope.launch {
+                                val loadedSummary = mutableListOf<String>()
+                                if (chatModel != null) {
+                                    statusMessage = "⏳ Cargando modelo Chat '${chatModel.name}' en memoria..."
+                                    val chatRes = withContext(Dispatchers.IO) {
+                                        PocketNodeInference.preloadModel(context, chatModel, forAudio = sharedAudio)
+                                    }
+                                    chatRes.onSuccess { backend ->
+                                        loadedSummary += "${chatModel.name} ($backend)"
                                     }.onFailure { e ->
-                                        statusMessage = "❌ Error cargando modelo: ${e.message}"
+                                        isInitializing = false
+                                        statusMessage = "❌ Error cargando modelo Chat: ${e.message}"
+                                        return@launch
                                     }
                                 }
-                            } else {
+
+                                if (audioModel != null && !sharedAudio) {
+                                    statusMessage = "⏳ Cargando modelo STT '${audioModel.name}' en memoria..."
+                                    val audioRes = withContext(Dispatchers.IO) {
+                                        PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
+                                    }
+                                    audioRes.onSuccess { backend ->
+                                        loadedSummary += "${audioModel.name} ($backend)"
+                                    }.onFailure { e ->
+                                        isInitializing = false
+                                        statusMessage = "❌ Error cargando modelo STT: ${e.message}"
+                                        return@launch
+                                    }
+                                }
+
+                                isInitializing = false
+                                statusMessage = if (loadedSummary.isNotEmpty()) {
+                                    "✅ Modelos en memoria: ${loadedSummary.joinToString(", ")}"
+                                } else {
+                                    "✅ Servidor iniciado."
+                                }
                                 try {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                         context.startForegroundService(intent)
@@ -362,7 +380,7 @@ fun PocketNodeServerDialog(
                                         context.startService(intent)
                                     }
                                 } catch (e: Exception) {
-                                    statusMessage = "❌ Error al iniciar servicio HTTP: ${e.message}"
+                                    statusMessage = "❌ Error iniciando servicio de servidor: ${e.message}"
                                 }
                             }
                         }

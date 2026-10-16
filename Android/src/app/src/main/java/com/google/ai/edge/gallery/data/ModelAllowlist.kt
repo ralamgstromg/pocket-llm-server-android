@@ -27,7 +27,7 @@ data class DefaultConfig(
   @SerializedName("topK") val topK: Int?,
   @SerializedName("topP") val topP: Float?,
   @SerializedName("temperature") val temperature: Float?,
-  @SerializedName("accelerators") val accelerators: String?,
+  @SerializedName("accelerators") var accelerators: String?,
   @SerializedName("visionAccelerator") val visionAccelerator: String?,
   @SerializedName("maxContextLength") val maxContextLength: Int?,
   @SerializedName("maxTokens") val maxTokens: Int?,
@@ -49,7 +49,7 @@ data class AllowedModel(
   val commitHash: String,
   val description: String,
   val sizeInBytes: Long,
-  val defaultConfig: DefaultConfig,
+  var defaultConfig: DefaultConfig,
   val taskTypes: List<String>,
   val disabled: Boolean? = null,
   val llmSupportImage: Boolean? = null,
@@ -107,21 +107,21 @@ data class AllowedModel(
       llmMaxToken = defaultConfig.maxTokens ?: 1024
       llmMaxContextLength = defaultConfig.maxContextLength
       if (defaultConfig.accelerators != null) {
-        val items = defaultConfig.accelerators.split(",")
-        accelerators = mutableListOf()
+        val items = defaultConfig.accelerators!!.split(",")
+        val parsedAccelerators = mutableListOf<Accelerator>()
         for (item in items) {
-          if (item == "cpu") {
-            accelerators.add(Accelerator.CPU)
-          } else if (item == "gpu") {
-            accelerators.add(Accelerator.GPU)
-          } else if (item == "npu") {
-            accelerators.add(Accelerator.NPU)
+          when (item.trim().lowercase()) {
+            "cpu" -> parsedAccelerators.add(Accelerator.CPU)
+            "gpu" -> parsedAccelerators.add(Accelerator.GPU)
+            "npu" -> parsedAccelerators.add(Accelerator.NPU)
           }
         }
         // Remove GPU from pixel 10 devices.
         if (isPixel10()) {
-          accelerators.remove(Accelerator.GPU)
+          parsedAccelerators.remove(Accelerator.GPU)
         }
+        // Always prioritize GPU first when supported by the model.
+        accelerators = parsedAccelerators.sortedBy { if (it == Accelerator.GPU) 0 else 1 }
       }
       if (defaultConfig.visionAccelerator != null) {
         val accelerator = defaultConfig.visionAccelerator
@@ -197,6 +197,4 @@ data class AllowedModel(
 }
 
 /** The model allowlist. */
-data class ModelAllowlist(
-  val models: List<AllowedModel>,
-)
+data class ModelAllowlist(val models: List<AllowedModel>)

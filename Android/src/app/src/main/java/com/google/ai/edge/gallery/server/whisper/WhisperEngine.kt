@@ -45,10 +45,12 @@ class WhisperEngine private constructor(
 
     /**
      * Transcribes 16 kHz mono samples. Audio longer than 30 s is split into windows and the texts
-     * are joined. [language] is an ISO code such as "es"; when null the language is detected.
+     * are joined. [language] is an ISO code such as "es"; when null or blank it defaults to Spanish ("es"),
+     * which also avoids the extra decoder pass of automatic language detection.
      */
-    fun transcribe(samples: FloatArray, language: String?): String {
-        val forcedLanguage = language?.let { code ->
+    fun transcribe(samples: FloatArray, language: String? = DEFAULT_LANGUAGE): String {
+        val effectiveLang = resolveLanguageCode(language)
+        val forcedLanguage = effectiveLang?.let { code ->
             val id = tokenizer.idOf("<|$code|>")
             require(id in tokenizer.languageIds) { "Idioma no soportado por Whisper: $code" }
             id
@@ -144,17 +146,30 @@ class WhisperEngine private constructor(
     }
 
     companion object {
+        const val DEFAULT_LANGUAGE = "es"
         private const val ENC_FRAMES = 1500
         private const val ENC_DIM = 1280
         private const val VOCAB = 51866
         private const val MAX_LEN = 128
         private const val PROMPT_LENGTH = 4
         private const val NEG_INF = -1e9f
-        private const val THREADS = 4
+        private const val MIN_THREADS = 4
+        private const val MAX_THREADS = 8
         private const val TOKENS_PER_SECOND = 8.0
 
         private const val N_MELS = WhisperFeatureExtractor.N_MELS
         private const val N_FRAMES = WhisperFeatureExtractor.N_FRAMES
+
+        /** Resolves the language code, defaulting to Spanish ("es") unless "auto" is explicitly requested. */
+        internal fun resolveLanguageCode(language: String?): String? {
+            val trimmed = language?.trim()?.lowercase()
+            return when {
+                trimmed.isNullOrEmpty() -> DEFAULT_LANGUAGE
+                trimmed == "auto" -> null
+                trimmed == "spanish" || trimmed == "español" -> "es"
+                else -> trimmed
+            }
+        }
 
         /**
          * Decoding budget for one window: about 8 tokens per second of audio plus a margin, capped by
@@ -167,7 +182,11 @@ class WhisperEngine private constructor(
 
         fun load(context: Context, modelFile: File): WhisperEngine {
             val tokenizerJson = context.assets.open("whisper/tokenizer.json").bufferedReader().use { it.readText() }
-            val interpreter = Interpreter(modelFile, Interpreter.Options().setNumThreads(THREADS))
+            val threads = Runtime.getRuntime().availableProcessors().coerceIn(MIN_THREADS, MAX_THREADS)
+            val options = Interpreter.Options()
+                .setNumThreads(threads)
+                .setUseXNNPACK(true)
+            val interpreter = Interpreter(modelFile, options)
             val signatures = interpreter.getSignatureKeys().toSet()
             require(signatures.containsAll(setOf("encode", "decode"))) {
                 "El modelo no es un Whisper válido (firmas: $signatures)"

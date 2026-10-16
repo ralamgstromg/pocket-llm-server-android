@@ -103,7 +103,9 @@ object LlmChatModelHelper : LlmModelHelper {
     Log.d(TAG, "Preferred backend: $preferredBackend")
 
     val modelPath = model.getPath(context = context)
-    val cacheDir = if (modelPath.startsWith("/data/local/tmp")) context.getExternalFilesDir(null)?.absolutePath else null
+    val cacheDir =
+      (if (modelPath.startsWith("/data/local/tmp")) context.getExternalFilesDir(null)
+      else context.cacheDir)?.absolutePath
 
     // Create an instance of LiteRT LM engine and conversation.
     try {

@@ -225,6 +225,7 @@ class PocketNodeServer {
 
                             resolvedModelName = audioModel.name
                             call.response.headers.append(MODEL_HEADER, headerSafe(audioModel.name))
+                            val effectiveLanguage = languageParam?.takeIf { it.isNotBlank() } ?: PocketNodeInference.DEFAULT_LANGUAGE
                             var whisperTimings: WhisperTimings? = null
                             val cleanText = if (audioModel.isWhisperStt) {
                                 val samples = context?.let { AudioDecoderHelper.decodeToMono16kSamples(it, rawAudioBytes!!) }
@@ -242,7 +243,7 @@ class PocketNodeServer {
                                     call.respondText(msg, status = HttpStatusCode.BadRequest)
                                     return@post
                                 }
-                                val output = transcribeWithWhisper(audioModel, samples, languageParam)
+                                val output = transcribeWithWhisper(audioModel, samples, effectiveLanguage)
                                 whisperTimings = output.timings
                                 output.text
                             } else {
@@ -255,12 +256,10 @@ class PocketNodeServer {
 
                                 val prompt = when {
                                     !promptParam.isNullOrBlank() -> promptParam!!
-                                    languageParam.equals("es", ignoreCase = true) || languageParam.equals("spanish", ignoreCase = true) ->
-                                        "Entrega ÚNICAMENTE el texto hablado literal de este audio. No incluyas introducciones, etiquetas, comillas ni explicaciones."
-                                    !languageParam.isNullOrBlank() ->
-                                        "Output ONLY the verbatim spoken text from this audio in language ${languageParam}. Do NOT include any intro, explanation, labels, or extra words."
+                                    effectiveLanguage.equals("es", ignoreCase = true) || effectiveLanguage.equals("spanish", ignoreCase = true) ->
+                                        "Entrega ÚNICAMENTE el texto hablado literal de este audio en español. No incluyas introducciones, etiquetas, comillas ni explicaciones."
                                     else ->
-                                        "Output ONLY the verbatim spoken text from this audio. Do NOT include any intro, explanation, labels, or extra words."
+                                        "Output ONLY the verbatim spoken text from this audio in language ${effectiveLanguage}. Do NOT include any intro, explanation, labels, or extra words."
                                 }
 
                                 val fullResponse = executeModelInference(audioModel, prompt, audioClips = listOf(processedAudioBytes))
@@ -274,7 +273,7 @@ class PocketNodeServer {
                                 statusCode = HttpStatusCode.OK.value,
                                 durationMs = System.currentTimeMillis() - startMs,
                                 model = audioModel.name,
-                                detail = "audio=${rawAudioBytes!!.size}B, lang=${languageParam ?: "auto"}, text=${cleanText.ifEmpty { "(vacío)" }.take(60)}$timingsNote",
+                                detail = "audio=${rawAudioBytes!!.size}B, lang=$effectiveLanguage, text=${cleanText.ifEmpty { "(vacío)" }.take(60)}$timingsNote",
                                 context = context,
                             )
                             if (responseFormatParam.equals("text", ignoreCase = true)) {
@@ -323,16 +322,74 @@ class PocketNodeServer {
             server = null
         }
         }
-        context?.let { warmUpWhisper(it) }
+        context?.let { preloadActiveModels(it) }
     }
 
-    /** Loads the Whisper STT model in the background so the first transcription does not pay the load time. */
-    private fun warmUpWhisper(context: Context) {
-        val model = PocketNodeState.activeAudioModel?.takeIf { it.isWhisperStt } ?: return
+    /** Preloads both active Chat and Audio STT models into memory as soon as the API is enabled. */
+    private fun preloadActiveModels(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
-            serverMutexMap.getOrPut(model.name) { Mutex() }.withLock {
-                val (_, err) = resolveAndInitModel("", context, isAudio = true)
-                if (err != null) Log.w("PocketNodeServer", "Whisper warm-up skipped: $err")
+            val chatModel = PocketNodeState.activeChatModel?.takeUnless { it.isWhisperStt }
+            val audioModel = PocketNodeState.activeAudioModel
+            val sharedAudio = chatModel != null && audioModel != null && chatModel.name == audioModel.name
+
+            if (chatModel != null) {
+                val startMs = System.currentTimeMillis()
+                serverMutexMap.getOrPut(chatModel.name) { Mutex() }.withLock {
+                    PocketNodeInference.preloadModel(context, chatModel, forAudio = sharedAudio)
+                        .onSuccess { backend ->
+                            PocketNodeLogger.log(
+                                method = "SERVER",
+                                route = "preload",
+                                statusCode = 200,
+                                durationMs = System.currentTimeMillis() - startMs,
+                                model = chatModel.name,
+                                detail = "Modelo chat precargado en $backend (español)",
+                                context = context,
+                            )
+                        }
+                        .onFailure { e ->
+                            Log.w("PocketNodeServer", "Chat model preload skipped: ${e.message}")
+                            PocketNodeLogger.log(
+                                method = "SERVER",
+                                route = "preload",
+                                statusCode = 503,
+                                durationMs = System.currentTimeMillis() - startMs,
+                                model = chatModel.name,
+                                detail = "Precarga chat omitida: ${e.message}",
+                                context = context,
+                            )
+                        }
+                }
+            }
+
+            if (audioModel != null && !sharedAudio) {
+                val startMs = System.currentTimeMillis()
+                serverMutexMap.getOrPut(audioModel.name) { Mutex() }.withLock {
+                    PocketNodeInference.preloadModel(context, audioModel, forAudio = true)
+                        .onSuccess { backend ->
+                            PocketNodeLogger.log(
+                                method = "SERVER",
+                                route = "preload",
+                                statusCode = 200,
+                                durationMs = System.currentTimeMillis() - startMs,
+                                model = audioModel.name,
+                                detail = "Modelo audio STT precargado en $backend (español)",
+                                context = context,
+                            )
+                        }
+                        .onFailure { e ->
+                            Log.w("PocketNodeServer", "Audio model preload skipped: ${e.message}")
+                            PocketNodeLogger.log(
+                                method = "SERVER",
+                                route = "preload",
+                                statusCode = 503,
+                                durationMs = System.currentTimeMillis() - startMs,
+                                model = audioModel.name,
+                                detail = "Precarga audio omitida: ${e.message}",
+                                context = context,
+                            )
+                        }
+                }
             }
         }
     }
@@ -390,7 +447,7 @@ class PocketNodeServer {
                 return Pair(model, null)
             }
 
-            PocketNodeInference.initializeLlm(context, model).onFailure { e ->
+            PocketNodeInference.initializeLlm(context, model, supportAudio = isAudio && model.llmSupportAudio).onFailure { e ->
                 return Pair(null, "Error initializing model '${model.name}': ${e.message}")
             }
         }
@@ -410,6 +467,11 @@ class PocketNodeServer {
         val mutex = serverMutexMap.getOrPut(model.name) { Mutex() }
         var fullResponse = ""
         mutex.withLock {
+            // Reset conversation per stateless HTTP call so KV cache stays empty and Spanish system instruction is active.
+            PocketNodeInference.resetConversationForApi(
+                model = model,
+                supportAudio = !audioClips.isNullOrEmpty(),
+            )
             val isResumed = AtomicBoolean(false)
             try {
                 suspendCoroutine { continuation ->
