@@ -143,6 +143,7 @@ Requisitos:
    Errores en formato OpenAI `{"error":{"message","type"}}`: `400` entrada inválida, `429` cola llena, `503` reconocedor no disponible (p. ej. falta el paquete de idioma).
    `language=auto` no detecta el idioma: usa español.
 
+<<<<<<< HEAD
 ## 🛠️ Herramientas (tools) en chat completions
 
 `POST /v1/chat/completions` acepta `tools` y `tool_choice` en formato OpenAI. Sirve con cualquier modelo: el servidor describe las herramientas en el prompt, valida la salida JSON del modelo y la devuelve como `tool_calls`.
@@ -161,6 +162,8 @@ Respuesta con llamada: `finish_reason: "tool_calls"`, `message.content: null` y 
 - Si la salida del modelo no es una llamada válida (JSON incompleto, herramienta desconocida, falta un argumento obligatorio), la respuesta es texto normal con `finish_reason: "stop"`. Nunca se devuelve una llamada inválida.
 - Sin streaming. Las llamadas dependen de que el modelo siga el formato pedido; los modelos pequeños pueden no hacerlo.
 
+=======
+>>>>>>> c5e815ef99d3b4a4748cdb909369138831783242
 ## 🔊 Síntesis de voz (TTS) con el motor del móvil
 
 `POST /v1/audio/speech` sintetiza voz con el motor TTS del sistema (`android.speech.tts`). Solo usa voces locales instaladas, sin conexión.

@@ -4,12 +4,15 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+<<<<<<< HEAD
 ### Herramientas (tools) en chat completions
 - `POST /v1/chat/completions` acepta `tools` y `tool_choice` (OpenAI). Las definiciones se inyectan en el prompt y la salida del modelo se valida en el servidor (`ToolCallProtocol.kt`).
 - Respuesta con `tool_calls` (`arguments` como string JSON), `finish_reason` (`tool_calls` / `stop`) y `content: null` en llamadas.
 - Historial estructurado: las llamadas del asistente y los mensajes `role: "tool"` ya no se aplanan a texto plano.
 - Pruebas: `ToolCallProtocolTest` (12).
 
+=======
+>>>>>>> c5e815ef99d3b4a4748cdb909369138831783242
 ### TTS con el motor del móvil y reducción de recursos
 - `POST /v1/audio/speech` (`PocketNodeServer.kt`, `AndroidNativeTtsEngine.kt`): síntesis con `android.speech.tts`, solo voces locales. Formatos `wav` (por defecto) y `pcm` (24 kHz); `speed` 0.25-4.0; `input` hasta 4096 caracteres. Errores en formato OpenAI (400/429/503).
 - Autotest de la app con la nueva ruta; `TTS_SERVICE` añadido a `<queries>`.
