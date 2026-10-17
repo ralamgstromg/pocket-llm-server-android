@@ -36,6 +36,7 @@ object PocketNodeApiTester {
     // Marker the server appends to the output when inference fails (still returns HTTP 200).
     private const val INFERENCE_ERROR_MARKER = "[Error:"
     private const val CHAT_BODY = """{"messages":[{"role":"user","content":"Responde solo: ok"}]}"""
+    private const val SPEECH_BODY = """{"input":"Prueba","voice":"alloy","response_format":"wav"}"""
 
     suspend fun runAll(): List<ApiTestResult> = withContext(Dispatchers.IO) {
         val fallbackChatModel = PocketNodeState.activeChatModel?.name
@@ -58,6 +59,13 @@ object PocketNodeApiTester {
                 send = { postAudio() },
             ) { reply ->
                 checkTranscription(reply.code, reply.body, reply.timings)
+            },
+            testRoute(
+                "POST /v1/audio/speech",
+                fallbackModel = AndroidNativeTtsEngine.ENGINE_MODEL_ID,
+                send = { postJson("/v1/audio/speech", SPEECH_BODY) },
+            ) { reply ->
+                checkSpeech(reply.code, reply.bytes, reply.contentType)
             },
         )
     }
@@ -94,6 +102,19 @@ object PocketNodeApiTester {
         }
     }
 
+    /** Checks that a speech reply is HTTP 200 with a non-empty RIFF/WAVE payload. */
+    internal fun checkSpeech(code: Int, bytes: ByteArray, contentType: String?): Verdict {
+        val isWav = bytes.size >= 12 &&
+            String(bytes, 0, 4, Charsets.US_ASCII) == "RIFF" &&
+            String(bytes, 8, 4, Charsets.US_ASCII) == "WAVE"
+        return when {
+            code != 200 -> Verdict("HTTP $code: ${String(bytes, Charsets.UTF_8).take(200)}")
+            !isWav -> Verdict("Respuesta no es WAV (Content-Type: $contentType, ${bytes.size} bytes)")
+            bytes.size <= 44 -> Verdict("WAV sin datos de audio")
+            else -> Verdict(null, "Audio WAV de ${bytes.size} bytes")
+        }
+    }
+
     /** Extracts the serving model name from the HTTP header, JSON body (`model` field), or configured fallback. */
     internal fun resolveModelName(headerModel: String?, body: String, fallbackModel: String?): String? {
         headerModel?.takeIf { it.isNotBlank() }?.let { return it }
@@ -103,7 +124,15 @@ object PocketNodeApiTester {
         return bodyModel ?: fallbackModel?.takeIf { it.isNotBlank() }
     }
 
-    private class HttpReply(val code: Int, val body: String, val timings: String?, val model: String?)
+    private class HttpReply(
+        val code: Int,
+        val bytes: ByteArray,
+        val timings: String?,
+        val model: String?,
+        val contentType: String?,
+    ) {
+        val body: String get() = String(bytes, Charsets.UTF_8)
+    }
 
     private fun testRoute(
         route: String,
@@ -166,8 +195,14 @@ object PocketNodeApiTester {
             }
             val code = connection.responseCode
             val stream = if (code >= 400) connection.errorStream else connection.inputStream
-            val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            return HttpReply(code, text, connection.getHeaderField(TIMINGS_HEADER), connection.getHeaderField(MODEL_HEADER))
+            val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+            return HttpReply(
+                code = code,
+                bytes = bytes,
+                timings = connection.getHeaderField(TIMINGS_HEADER),
+                model = connection.getHeaderField(MODEL_HEADER),
+                contentType = connection.contentType,
+            )
         } finally {
             connection.disconnect()
         }

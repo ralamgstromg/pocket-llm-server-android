@@ -29,6 +29,8 @@ object PocketNodeState {
     var configuredIdleMinutes by mutableIntStateOf(DEFAULT_IDLE_TIMEOUT_MINUTES)
     /** When true, requests on-device/offline speech recognition first in [AndroidNativeSttEngine]. */
     var preferOfflineNativeStt by mutableStateOf(true)
+    /** When true the Wi-Fi lock stays held for the whole service uptime; otherwise only while the API is active. */
+    var keepWifiAwake by mutableStateOf(false)
 
     // Backward compatibility property for completions
     var activeModel: Model?
@@ -43,6 +45,7 @@ object PocketNodeState {
     private const val KEY_MAX_TOKENS = "api_max_tokens"
     private const val KEY_IDLE_MINUTES = "api_idle_minutes"
     private const val KEY_PREFER_OFFLINE_STT = "prefer_offline_native_stt"
+    private const val KEY_KEEP_WIFI_AWAKE = "keep_wifi_awake"
 
     internal fun clampMaxTokens(tokens: Int): Int =
         tokens.coerceIn(MIN_MAX_TOKENS, MAX_MAX_TOKENS)
@@ -63,6 +66,7 @@ object PocketNodeState {
         configuredMaxTokens = clampMaxTokens(prefs.getInt(KEY_MAX_TOKENS, DEFAULT_MAX_TOKENS))
         configuredIdleMinutes = clampIdleMinutes(prefs.getInt(KEY_IDLE_MINUTES, DEFAULT_IDLE_TIMEOUT_MINUTES))
         preferOfflineNativeStt = prefs.getBoolean(KEY_PREFER_OFFLINE_STT, true)
+        keepWifiAwake = prefs.getBoolean(KEY_KEEP_WIFI_AWAKE, false)
     }
 
     fun savePreferences(
@@ -72,6 +76,7 @@ object PocketNodeState {
         maxTokens: Int = configuredMaxTokens,
         idleMinutes: Int = configuredIdleMinutes,
         preferOfflineStt: Boolean = preferOfflineNativeStt,
+        keepWifi: Boolean = keepWifiAwake,
     ) {
         val validTokens = clampMaxTokens(maxTokens)
         val validIdleMinutes = clampIdleMinutes(idleMinutes)
@@ -80,6 +85,7 @@ object PocketNodeState {
         configuredMaxTokens = validTokens
         configuredIdleMinutes = validIdleMinutes
         preferOfflineNativeStt = preferOfflineStt
+        keepWifiAwake = keepWifi
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_CHAT_MODEL, chatModelName)
@@ -87,6 +93,7 @@ object PocketNodeState {
             .putInt(KEY_MAX_TOKENS, validTokens)
             .putInt(KEY_IDLE_MINUTES, validIdleMinutes)
             .putBoolean(KEY_PREFER_OFFLINE_STT, preferOfflineStt)
+            .putBoolean(KEY_KEEP_WIFI_AWAKE, keepWifi)
             .apply()
     }
 }

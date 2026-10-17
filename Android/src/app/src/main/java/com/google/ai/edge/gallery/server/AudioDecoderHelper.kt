@@ -180,26 +180,34 @@ object AudioDecoderHelper {
      * Extracts raw 16-bit little-endian PCM bytes from a 16 kHz mono WAV container.
      * Returns null if [wav] is not a valid 16 kHz mono 16-bit WAV.
      */
-    internal fun extractWavPcm16kMonoBytes(wav: ByteArray): ByteArray? {
+    internal fun extractWavPcm16kMonoBytes(wav: ByteArray): ByteArray? =
+        parseWavPcm16Mono(wav)?.takeIf { it.first == TARGET_SAMPLE_RATE }?.second
+
+    /**
+     * Parses a mono 16-bit PCM WAV of any sample rate into (sampleRate, raw little-endian PCM bytes).
+     * Returns null for non-WAV input or any other channel count or bit depth.
+     */
+    internal fun parseWavPcm16Mono(wav: ByteArray): Pair<Int, ByteArray>? {
         if (wav.size < 12 || String(wav, 0, 4) != "RIFF" || String(wav, 8, 4) != "WAVE") return null
         val buffer = ByteBuffer.wrap(wav).order(ByteOrder.LITTLE_ENDIAN)
         var pos = 12
         var formatOk = false
+        var sampleRate = 0
         while (pos + 8 <= wav.size) {
             val chunkId = String(wav, pos, 4)
             val chunkSize = buffer.getInt(pos + 4)
             when (chunkId) {
                 "fmt " -> {
                     val channels = buffer.getShort(pos + 10).toInt()
-                    val sampleRate = buffer.getInt(pos + 12)
+                    sampleRate = buffer.getInt(pos + 12)
                     val bits = buffer.getShort(pos + 22).toInt()
-                    formatOk = channels == 1 && sampleRate == TARGET_SAMPLE_RATE && bits == 16
+                    formatOk = channels == 1 && bits == 16
                 }
                 "data" -> {
                     if (!formatOk) return null
                     val availableBytes = minOf(chunkSize, wav.size - pos - 8).let { it - (it and 1) }
-                    if (availableBytes <= 0) return ByteArray(0)
-                    return wav.copyOfRange(pos + 8, pos + 8 + availableBytes)
+                    if (availableBytes <= 0) return sampleRate to ByteArray(0)
+                    return sampleRate to wav.copyOfRange(pos + 8, pos + 8 + availableBytes)
                 }
             }
             pos += 8 + chunkSize + (chunkSize and 1)
@@ -233,7 +241,7 @@ object AudioDecoderHelper {
         return channels == 1 && sampleRate == TARGET_SAMPLE_RATE
     }
 
-    private fun resampleMono(inputSamples: ShortArray, fromRate: Int, toRate: Int): ShortArray {
+    internal fun resampleMono(inputSamples: ShortArray, fromRate: Int, toRate: Int): ShortArray {
         if (fromRate == toRate || inputSamples.isEmpty()) return inputSamples
         val ratio = toRate.toDouble() / fromRate
         val outputLength = (inputSamples.size * ratio).toInt()
@@ -251,7 +259,7 @@ object AudioDecoderHelper {
         return resampled
     }
 
-    private fun createWavFileBytes(pcmSamples: ShortArray, sampleRate: Int): ByteArray {
+    internal fun createWavFileBytes(pcmSamples: ShortArray, sampleRate: Int): ByteArray {
         val pcmDataSize = pcmSamples.size * 2
         val totalSize = 44 + pcmDataSize
         val buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN)

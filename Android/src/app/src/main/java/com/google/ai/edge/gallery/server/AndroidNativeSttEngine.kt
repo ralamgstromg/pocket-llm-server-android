@@ -52,6 +52,9 @@ data class NativeSttOutput(
     val timings: NativeSttTimings,
 )
 
+/** A recognizer error with its [SpeechRecognizer] code, so callers can tell retryable failures apart. */
+class SttRecognitionException(val errorCode: Int, message: String) : IllegalStateException(message)
+
 /** Thrown when too many transcriptions are already queued behind the recognizer. Maps to HTTP 429. */
 class SttBusyException : IllegalStateException("Servicio STT ocupado: demasiadas transcripciones en cola. Reintente en unos segundos.")
 
@@ -223,7 +226,7 @@ object AndroidNativeSttEngine {
             // Fast-path for pure silence (e.g. self-test route or empty voice note):
             // returns immediately (< 2 ms) without binding SpeechRecognizer.
             if (AudioDecoderHelper.isPcmSilence(pcmBytes)) {
-                val mode = if (preferOffline) "native-offline" else "native-system"
+                val mode = "silence"
                 return@withInferenceWakeLock Result.success(
                     NativeSttOutput(
                         text = "",
@@ -299,6 +302,7 @@ object AndroidNativeSttEngine {
     ): Result<Pair<String, String>> {
         val onDeviceSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(context) }.getOrDefault(false)
+        var offlinePackMissing = false
 
         if (preferOffline && onDeviceSupported) {
             val onDeviceAttempt = runSingleRecognition(
@@ -312,10 +316,13 @@ object AndroidNativeSttEngine {
                 return onDeviceAttempt.map { it to "native-ondevice" }
             }
             Log.w(TAG, "On-device STT failed (${onDeviceAttempt.exceptionOrNull()?.message}); falling back to system SpeechRecognizer.")
+            // A missing offline language pack also breaks the offline-preferring system attempt below,
+            // but the standard system recognizer can still work online, so it is always tried.
+            offlinePackMissing = onDeviceAttempt.exceptionOrNull()?.isLanguageError() == true
         }
 
         // System SpeechRecognizer (first with EXTRA_PREFER_OFFLINE if requested, then standard system mode)
-        if (preferOffline) {
+        if (preferOffline && !offlinePackMissing) {
             val offlineSystemAttempt = runSingleRecognition(
                 context = context,
                 pcmSegment = pcmSegment,
@@ -457,7 +464,7 @@ object AndroidNativeSttEngine {
                                         else ->
                                             "Error en servicio STT nativo (${speechErrorName(error)}, código $error)"
                                     }
-                                    finish(Result.failure(IllegalStateException(message)))
+                                    finish(Result.failure(SttRecognitionException(error, message)))
                                 }
                             }
 
@@ -493,6 +500,10 @@ object AndroidNativeSttEngine {
             IllegalStateException("Tiempo de espera agotado en el servicio STT nativo del móvil (${timeoutMs} ms).")
         )
     }
+
+    private fun Throwable.isLanguageError(): Boolean =
+        this is SttRecognitionException &&
+            (errorCode == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE || errorCode == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED)
 
     internal fun speechErrorName(error: Int): String = when (error) {
         SpeechRecognizer.ERROR_AUDIO -> "ERROR_AUDIO"

@@ -143,6 +143,26 @@ Requisitos:
    Errores en formato OpenAI `{"error":{"message","type"}}`: `400` entrada inválida, `429` cola llena, `503` reconocedor no disponible (p. ej. falta el paquete de idioma).
    `language=auto` no detecta el idioma: usa español.
 
+## 🔊 Síntesis de voz (TTS) con el motor del móvil
+
+`POST /v1/audio/speech` sintetiza voz con el motor TTS del sistema (`android.speech.tts`). Solo usa voces locales instaladas, sin conexión.
+
+```bash
+curl http://YOUR_PHONE_IP:8080/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"input":"Hola, ¿qué tal?","voice":"alloy","response_format":"wav"}' \
+  -o voz.wav
+```
+
+- `input` (obligatorio, máximo 4096 caracteres). Textos largos se sintetizan por frases y se concatenan.
+- `voice`: un nombre de voz de Android (p. ej. `es-es-x-eea-local`), una etiqueta BCP-47 (`en-US`) o un nombre OpenAI (`alloy`, `nova`, …), que usa el idioma español por defecto. Los nombres OpenAI no cambian la voz.
+- `speed`: 0.25 a 4.0 (por defecto 1.0).
+- `response_format`: `wav` (por defecto, a la frecuencia del motor), `pcm` (PCM 16 bits mono a 24 kHz, sin cabecera) o `aac` (AAC-LC con cabecera ADTS, unas 8 veces más pequeño que WAV para voz; reproducible con VLC o ffmpeg).
+- `model` se acepta e ignora.
+
+**Diferencia con OpenAI:** el formato por defecto es `wav`, no `mp3`, y `mp3`, `opus` y `flac` devuelven 400 porque el móvil no incluye codificadores de esos formatos. `aac` usa ADTS y no un contenedor m4a. Los clientes deben fijar `response_format`.
+Si no hay voz local para el idioma, la ruta devuelve 503 con instrucciones para instalarla en Ajustes > Salida de texto a voz.
+
 ---
 
 ## 🧪 Testing the API from the App

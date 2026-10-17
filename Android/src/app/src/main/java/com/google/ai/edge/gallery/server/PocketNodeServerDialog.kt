@@ -79,6 +79,10 @@ fun PocketNodeServerDialog(
         AndroidNativeSttEngine.statusSummary(context)
     }
 
+    val nativeTtsSummary = remember(context) {
+        AndroidNativeTtsEngine.statusSummary(context)
+    }
+
     val exportLogsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
@@ -294,6 +298,71 @@ fun PocketNodeServerDialog(
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Native TTS: voice, speed and format are per-request parameters, so the card only shows status.
+                Text(
+                    text = "Síntesis de Voz (TTS - OpenAI API):",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🔊 $nativeTtsSummary",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Voces locales del móvil sin conexión. Parámetros de la petición: voice (nombre de voz o idioma BCP-47), speed (0.25-4.0) y response_format (wav, pcm o aac).",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Wi-Fi stays awake for the whole uptime only if enabled; otherwise it is held while the API is active.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Mantener Wi-Fi activo siempre",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                        )
+                        Text(
+                            text = "Desactivado: el Wi-Fi solo se mantiene despierto mientras la API está en uso. Activado: más consumo en reposo.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = PocketNodeState.keepWifiAwake,
+                        onCheckedChange = { checked ->
+                            PocketNodeState.savePreferences(
+                                context = context,
+                                chatModelName = selectedChatModelName,
+                                keepWifi = checked,
+                            )
+                            if (checked && PocketNodeState.isServerRunning) {
+                                PocketNodeWifiLock.hold(context.applicationContext)
+                            }
+                            statusMessage = if (checked) "✅ Wi-Fi se mantendrá activo siempre." else "✅ Wi-Fi solo activo durante el uso de la API."
+                        },
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
