@@ -1,15 +1,13 @@
 package com.google.ai.edge.gallery.server
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.Manifest
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -19,7 +17,6 @@ import androidx.core.content.ContextCompat
 class PocketNodeService : Service() {
 
     private val server = PocketNodeServer()
-    private var wifiLock: WifiManager.WifiLock? = null
 
     companion object {
         private const val TAG = "PocketNodeService"
@@ -48,9 +45,13 @@ class PocketNodeService : Service() {
             }
             PocketNodeState.syncSharedModels()
 
-            // Start Ktor HTTP Server
-            server.start(this)
-            acquireWifiLock()
+            // A null intent means the system restarted a killed service (START_STICKY). Skip the preload
+            // then: the model loads on the first request instead of costing RAM and battery on restart.
+            server.start(this, preload = intent != null)
+
+            if (PocketNodeState.keepWifiAwake) {
+                PocketNodeWifiLock.hold(applicationContext)
+            }
 
             // Create the persistent notification required by Android for Foreground Services
             val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -76,9 +77,13 @@ class PocketNodeService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         server.stop()
-        wifiLock?.takeIf { it.isHeld }?.release()
-        wifiLock = null
+        PocketNodeLogger.flush(applicationContext)
+        PocketNodeWifiLock.release()
         PocketNodeState.isServerRunning = false
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null // We don't need binding, just a started service
     }
 
     /**
@@ -102,24 +107,6 @@ class PocketNodeService : Service() {
             }
         }
         startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-    }
-
-    /**
-     * Keeps Wi-Fi awake while the screen is off. A foreground service alone does not stop Wi-Fi power
-     * save. Plain WIFI_MODE_FULL is used because the LOW_LATENCY/HIGH_PERF modes are ignored on
-     * Android 10+ unless the app is visible.
-     */
-    private fun acquireWifiLock() {
-        if (wifiLock?.isHeld == true) return
-        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return
-        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "PocketNode::WifiLock").apply {
-            setReferenceCounted(false)
-            acquire()
-        }
-    }
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null // We don't need binding, just a started service
     }
 
     private fun createNotificationChannel() {

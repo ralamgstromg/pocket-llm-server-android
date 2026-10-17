@@ -3,6 +3,7 @@ package com.google.ai.edge.gallery.server
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -32,6 +33,15 @@ class AudioDecoderHelperTest {
         assertNull(AudioDecoderHelper.extractWavPcm16kMonoBytes(wav(44_100, 1, 16, pcm)))
         assertNull(AudioDecoderHelper.extractWavPcm16kMonoBytes(wav(16_000, 2, 16, pcm)))
         assertNull(AudioDecoderHelper.extractWavPcm16kMonoBytes(wav(16_000, 1, 8, pcm)))
+    }
+
+    @Test
+    fun parseWavPcm16Mono_returnsAnySampleRate() {
+        val pcm = byteArrayOf(3, 0)
+        val parsed = AudioDecoderHelper.parseWavPcm16Mono(wav(24_000, 1, 16, pcm))
+        assertEquals(24_000, parsed!!.first)
+        assertArrayEquals(pcm, parsed.second)
+        assertNull(AudioDecoderHelper.parseWavPcm16Mono(wav(16_000, 2, 16, pcm)))
     }
 
     @Test

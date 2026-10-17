@@ -4,6 +4,26 @@ Cambios aplicados a Pocket Node (fork de AI Edge Gallery). Los más recientes va
 
 ## Unreleased
 
+### Herramientas (tools) en chat completions
+- `POST /v1/chat/completions` acepta `tools` y `tool_choice` (OpenAI). Las definiciones se inyectan en el prompt y la salida del modelo se valida en el servidor (`ToolCallProtocol.kt`).
+- Respuesta con `tool_calls` (`arguments` como string JSON), `finish_reason` (`tool_calls` / `stop`) y `content: null` en llamadas.
+- Historial estructurado: las llamadas del asistente y los mensajes `role: "tool"` ya no se aplanan a texto plano.
+- Pruebas: `ToolCallProtocolTest` (12).
+
+### TTS con el motor del móvil y reducción de recursos
+- `POST /v1/audio/speech` (`PocketNodeServer.kt`, `AndroidNativeTtsEngine.kt`): síntesis con `android.speech.tts`, solo voces locales. Formatos `wav` (por defecto) y `pcm` (24 kHz); `speed` 0.25-4.0; `input` hasta 4096 caracteres. Errores en formato OpenAI (400/429/503).
+- Autotest de la app con la nueva ruta; `TTS_SERVICE` añadido a `<queries>`.
+- Consumo en reposo y RAM:
+  - Renovación del temporizador de inactividad al terminar cada inferencia o transcripción, para evitar recargas tras peticiones largas.
+  - Wi-Fi: el `WifiLock` (`PocketNodeWifiLock.kt`) se mantiene solo mientras la API está activa. Opción "Mantener Wi-Fi activo siempre" en el diálogo, desactivada por defecto.
+  - Sin precarga del modelo al reiniciar el servicio tras un kill del sistema (`START_STICKY`); se carga en la primera petición.
+  - `max_tokens` menores ya no recargan el motor. Es un valor máximo del motor, no una cota por petición: las respuestas pueden ser más largas que `max_tokens`.
+  - El logger escribe en lotes de 20 líneas y recorta el archivo a 256 KB. Las líneas pendientes se pierden si el proceso muere antes de volcarse.
+  - Límites de entrada: subidas de audio de 25 MB (413), JSON de chat de 1 MB, JSON de TTS de 64 KB.
+  - STT: un error de idioma no ausente reintenta los demás modos de reconocimiento.
+  - TTS: formato `aac` (AAC-LC en ADTS, `MediaCodec`), unas 8 veces más pequeño que WAV para voz.
+  - El silencio en STT se etiqueta `mode=silence` en vez de reflejar la preferencia.
+
 ### STT migrado al servicio nativo del móvil (sin Whisper)
 - `AndroidNativeSttEngine.kt`: la transcripción usa `SpeechRecognizer` (on-device preferido), alimentado por pipe con `EXTRA_AUDIO_SOURCE`, así que funciona con la pantalla apagada.
 - `POST /v1/audio/transcriptions` (`PocketNodeServer.kt`):

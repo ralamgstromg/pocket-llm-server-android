@@ -31,6 +31,10 @@ data class ApiOperationLogEntry(
 
 object PocketNodeLogger {
     internal const val MAX_ENTRIES = 500
+    /** Lines are written to the log file in batches of this size, not one open/write/close per request. */
+    internal const val FILE_BATCH_SIZE = 20
+    /** The log file is trimmed to its newest half once it grows beyond this size. */
+    internal const val MAX_FILE_BYTES = 256L * 1024
     private const val PREFS_NAME = "pocket_node_prefs"
     private const val KEY_LOGGING_ENABLED = "api_logging_enabled"
     private const val LOG_DIR_NAME = "logs"
@@ -38,6 +42,7 @@ object PocketNodeLogger {
 
     private val lock = Any()
     private val buffer = ArrayDeque<ApiOperationLogEntry>()
+    private val pendingFileLines = ArrayList<String>()
 
     var isLoggingEnabled by mutableStateOf(true)
     var entries by mutableStateOf<List<ApiOperationLogEntry>>(emptyList())
@@ -87,9 +92,38 @@ object PocketNodeLogger {
         entries = snapshot
 
         if (context != null) {
-            runCatching {
-                val file = getLogFile(context)
-                file.appendText(entry.formatLine() + "\n", Charsets.UTF_8)
+            val batch = synchronized(lock) {
+                pendingFileLines += entry.formatLine()
+                if (pendingFileLines.size >= FILE_BATCH_SIZE) drainPendingLocked() else null
+            }
+            if (batch != null) writeLines(context, batch)
+        }
+    }
+
+    /**
+     * Writes any batched lines to the log file. Called on hibernation and server stop so the file is
+     * current when the server goes idle. Lines still batched are lost only if the process is killed.
+     */
+    fun flush(context: Context) {
+        val batch = synchronized(lock) { drainPendingLocked() } ?: return
+        writeLines(context, batch)
+    }
+
+    private fun drainPendingLocked(): List<String>? {
+        if (pendingFileLines.isEmpty()) return null
+        val batch = pendingFileLines.toList()
+        pendingFileLines.clear()
+        return batch
+    }
+
+    private fun writeLines(context: Context, lines: List<String>) {
+        runCatching {
+            val file = getLogFile(context)
+            if (file.exists() && file.length() > MAX_FILE_BYTES) {
+                val existing = file.readLines(Charsets.UTF_8)
+                file.writeText((existing.takeLast(existing.size / 2) + lines).joinToString("\n", postfix = "\n"), Charsets.UTF_8)
+            } else {
+                file.appendText(lines.joinToString("\n", postfix = "\n"), Charsets.UTF_8)
             }
         }
     }
@@ -111,6 +145,7 @@ object PocketNodeLogger {
     fun clear(context: Context? = null) {
         synchronized(lock) {
             buffer.clear()
+            pendingFileLines.clear()
         }
         entries = emptyList()
         if (context != null) {

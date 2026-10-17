@@ -143,6 +143,44 @@ Requisitos:
    Errores en formato OpenAI `{"error":{"message","type"}}`: `400` entrada inválida, `429` cola llena, `503` reconocedor no disponible (p. ej. falta el paquete de idioma).
    `language=auto` no detecta el idioma: usa español.
 
+## 🛠️ Herramientas (tools) en chat completions
+
+`POST /v1/chat/completions` acepta `tools` y `tool_choice` en formato OpenAI. Sirve con cualquier modelo: el servidor describe las herramientas en el prompt, valida la salida JSON del modelo y la devuelve como `tool_calls`.
+
+```bash
+curl http://YOUR_PHONE_IP:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"¿Tiempo en Madrid?"}],
+       "tools":[{"type":"function","function":{"name":"get_weather",
+         "parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]}'
+```
+
+Respuesta con llamada: `finish_reason: "tool_calls"`, `message.content: null` y `message.tool_calls[]` con `arguments` como string JSON. Envía de vuelta el resultado con un mensaje `{"role":"tool","tool_call_id":"…","name":"get_weather","content":"…"}` tras el `tool_calls` del asistente para obtener la respuesta final en texto.
+
+- `tool_choice`: `"auto"` (por defecto), `"none"` (no llama herramientas), `"required"` o `{"type":"function","function":{"name":"…"}}`.
+- Si la salida del modelo no es una llamada válida (JSON incompleto, herramienta desconocida, falta un argumento obligatorio), la respuesta es texto normal con `finish_reason: "stop"`. Nunca se devuelve una llamada inválida.
+- Sin streaming. Las llamadas dependen de que el modelo siga el formato pedido; los modelos pequeños pueden no hacerlo.
+
+## 🔊 Síntesis de voz (TTS) con el motor del móvil
+
+`POST /v1/audio/speech` sintetiza voz con el motor TTS del sistema (`android.speech.tts`). Solo usa voces locales instaladas, sin conexión.
+
+```bash
+curl http://YOUR_PHONE_IP:8080/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"input":"Hola, ¿qué tal?","voice":"alloy","response_format":"wav"}' \
+  -o voz.wav
+```
+
+- `input` (obligatorio, máximo 4096 caracteres). Textos largos se sintetizan por frases y se concatenan.
+- `voice`: un nombre de voz de Android (p. ej. `es-es-x-eea-local`), una etiqueta BCP-47 (`en-US`) o un nombre OpenAI (`alloy`, `nova`, …), que usa el idioma español por defecto. Los nombres OpenAI no cambian la voz.
+- `speed`: 0.25 a 4.0 (por defecto 1.0).
+- `response_format`: `wav` (por defecto, a la frecuencia del motor), `pcm` (PCM 16 bits mono a 24 kHz, sin cabecera) o `aac` (AAC-LC con cabecera ADTS, unas 8 veces más pequeño que WAV para voz; reproducible con VLC o ffmpeg).
+- `model` se acepta e ignora.
+
+**Diferencia con OpenAI:** el formato por defecto es `wav`, no `mp3`, y `mp3`, `opus` y `flac` devuelven 400 porque el móvil no incluye codificadores de esos formatos. `aac` usa ADTS y no un contenedor m4a. Los clientes deben fijar `response_format`.
+Si no hay voz local para el idioma, la ruta devuelve 503 con instrucciones para instalarla en Ajustes > Salida de texto a voz.
+
 ---
 
 ## 🧪 Testing the API from the App

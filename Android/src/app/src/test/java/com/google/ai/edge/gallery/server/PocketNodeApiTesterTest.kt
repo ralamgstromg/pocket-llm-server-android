@@ -57,6 +57,22 @@ class PocketNodeApiTesterTest {
     }
 
     @Test
+    fun checkSpeech_wavWithAudioPasses() {
+        val verdict = PocketNodeApiTester.checkSpeech(200, PocketNodeApiTester.silentWav(), "audio/wav")
+        assertNull(verdict.error)
+    }
+
+    @Test
+    fun checkSpeech_nonWavFails() {
+        assertNotNull(PocketNodeApiTester.checkSpeech(200, """{"error":"x"}""".toByteArray(), "application/json").error)
+    }
+
+    @Test
+    fun checkSpeech_httpErrorFails() {
+        assertTrue(PocketNodeApiTester.checkSpeech(503, "Error".toByteArray(), null).error!!.startsWith("HTTP 503"))
+    }
+
+    @Test
     fun headerSafe_keepsPrintableAsciiNames() {
         assertEquals("Gemma-4-E2B-it", headerSafe("Gemma-4-E2B-it"))
         assertEquals("Whisper large v3", headerSafe("Whisper large v3"))

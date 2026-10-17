@@ -108,7 +108,8 @@ object PocketNodeInference {
         val conversationTurns = mutableListOf<Message>()
 
         for (msg in messages) {
-            val cleanContent = sanitizeControlTokens(msg.content)
+            // renderTurn keeps assistant tool calls and tool results structured instead of flattening them.
+            val cleanContent = sanitizeControlTokens(renderTurn(msg))
             if (cleanContent.isEmpty()) continue
             val role = msg.role.trim().lowercase()
             if (role == "system" || role == "developer") {
@@ -126,7 +127,7 @@ object PocketNodeInference {
         if (conversationTurns.size == 1) {
             return ChatPromptContext(
                 systemInstruction = effectiveSystem,
-                userPrompt = conversationTurns.first().content,
+                userPrompt = conversationTurns.first().content.orEmpty(),
             )
         }
 
@@ -135,9 +136,10 @@ object PocketNodeInference {
         val formattedHistory = historyTurns.joinToString("\n") { turn ->
             val label = when (turn.role) {
                 "assistant", "model" -> "Asistente"
+                "tool" -> "Herramienta"
                 else -> "Usuario"
             }
-            "[$label]: ${turn.content}"
+            "[$label]: ${turn.content.orEmpty()}"
         }
 
         val structuredPrompt = buildString {
@@ -146,7 +148,7 @@ object PocketNodeInference {
             appendLine("</historial_conversacion>")
             appendLine()
             appendLine("<mensaje_actual_usuario>")
-            appendLine(currentTurn.content)
+            appendLine(currentTurn.content.orEmpty())
             append("</mensaje_actual_usuario>")
         }
 
@@ -266,7 +268,8 @@ object PocketNodeInference {
             defaultValue = PocketNodeState.DEFAULT_MAX_TOKENS,
         )
 
-        if (model.instance != null && currentMaxTokens == desiredMaxTokens) {
+        // A loaded engine sized for >= the requested limit is reused: lowering max_tokens must not reload it.
+        if (model.instance != null && currentMaxTokens >= desiredMaxTokens) {
             closeIdleConversation(model)
             val current = Accelerator.entries.firstOrNull {
                 it.label == model.configValues[ConfigKeys.ACCELERATOR.label]
@@ -274,7 +277,7 @@ object PocketNodeInference {
             return Result.success(current ?: preferredAccelerator(model))
         }
 
-        if (model.instance != null && currentMaxTokens != desiredMaxTokens) {
+        if (model.instance != null && currentMaxTokens < desiredMaxTokens) {
             Log.i(TAG, "Reinitializing '${model.name}' to apply new maxTokens=$desiredMaxTokens (was $currentMaxTokens)")
             LlmChatModelHelper.cleanUp(model, onDone = {})
         }
@@ -327,7 +330,7 @@ object PocketNodeInference {
                 key = ConfigKeys.MAX_TOKENS,
                 defaultValue = PocketNodeState.DEFAULT_MAX_TOKENS,
             )
-            if (context != null && (model.instance == null || currentMaxTokens != targetMaxTokens)) {
+            if (context != null && (model.instance == null || currentMaxTokens < targetMaxTokens)) {
                 guardMemoryBeforeLoad(context, model)
                 initializeLlmLocked(
                     context = context,
@@ -431,10 +434,14 @@ object PocketNodeInference {
     /** Records API activity and resets the idle model unload watchdog to save battery when inactive. */
     fun touchActivity(context: Context? = null) {
         lastActivityMs.set(System.currentTimeMillis())
+        context?.applicationContext?.let { PocketNodeWifiLock.hold(it) }
         scheduleIdleWatchdog(context?.applicationContext)
     }
 
-    /** Acquires a temporary CPU WakeLock strictly during active inference so idle server time uses near-zero battery. */
+    /**
+     * Acquires a temporary CPU WakeLock strictly during active inference so idle server time uses near-zero battery.
+     * Renews the idle timer on exit too, so the watchdog never hibernates right after a long request.
+     */
     internal suspend fun <T> withInferenceWakeLock(context: Context?, block: suspend () -> T): T {
         val powerManager = context?.applicationContext?.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val wakeLock = powerManager?.newWakeLock(
@@ -452,6 +459,7 @@ object PocketNodeInference {
                     runCatching { wl.release() }
                 }
             }
+            touchActivity(context)
         }
     }
 
@@ -462,7 +470,10 @@ object PocketNodeInference {
             delay(timeoutMs)
             val elapsed = System.currentTimeMillis() - lastActivityMs.get()
             if (elapsed >= timeoutMs && PocketNodeState.isServerRunning) {
+                // Wi-Fi lock is only held while the API is active unless the user asked to keep Wi-Fi awake.
+                if (!PocketNodeState.keepWifiAwake) appContext?.let { PocketNodeWifiLock.release() }
                 val released = releaseAllLoadedModels()
+                appContext?.let { PocketNodeLogger.flush(it) }
                 if (released.isNotEmpty()) {
                     val mins = PocketNodeState.configuredIdleMinutes
                     Log.i(TAG, "Hibernated idle models after ${mins}m to save battery: ${released.joinToString()}")
@@ -498,6 +509,7 @@ object PocketNodeInference {
                 }
             }
         }
+        AndroidNativeTtsEngine.shutdown()
         return released
     }
 
